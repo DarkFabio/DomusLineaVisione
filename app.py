@@ -51,29 +51,60 @@ def inference():
     try:
 
         frames = pipeline.wait_for_frames()
-
         color_frame = frames.get_color_frame()
 
         if not color_frame:
-            return None
+            return None, "Camera assente"
 
-        frame = np.asanyarray(color_frame.get_data())
+        frame = np.asanyarray(
+            color_frame.get_data()
+        )
 
         last_original_frame = frame.copy()
 
+        t0 = time.perf_counter()
+
         results = model.predict(
-            source=frame,
+            frame,
             verbose=False
         )
 
-        segmented = results[0].plot()
+        inference_ms = (
+                               time.perf_counter() - t0
+                       ) * 1000
+
+        result = results[0]
+
+        segmented = result.plot()
 
         segmented = cv2.cvtColor(
             segmented,
             cv2.COLOR_BGR2RGB
         )
 
-        return segmented
+        tile_count = 0
+        object_count = 0
+
+        if result.boxes is not None:
+
+            object_count = len(result.boxes)
+
+            for cls in result.boxes.cls:
+
+                class_id = int(cls)
+
+                class_name = model.names[class_id]
+
+                if class_name.lower() == "tile":
+                    tile_count += 1
+
+        info = (
+            f"Tile: {tile_count}    |    "
+            f"Objects: {object_count}    |    "
+            f"Inference: {inference_ms:.1f} ms"
+        )
+
+        return segmented, info
 
     except Exception as e:
         print(e)
@@ -106,10 +137,18 @@ def save_image():
 
 with gr.Blocks() as demo:
 
-    gr.Markdown("# RealSense D455 Semantic Segmentation")
+
+    gr.Markdown(
+        "# Domus Linea Vision"
+    )
 
     image = gr.Image(
-        label="Segmentazione Live"
+        label="Live View"
+    )
+
+    info = gr.Textbox(
+        label="Risultati",
+        interactive=False
     )
 
     save_btn = gr.Button(
@@ -117,7 +156,7 @@ with gr.Blocks() as demo:
     )
 
     save_status = gr.Textbox(
-        label="Stato"
+        label="Salvataggio"
     )
 
     save_btn.click(
@@ -128,9 +167,26 @@ with gr.Blocks() as demo:
     timer = gr.Timer(0.1)
 
     timer.tick(
-        fn=inference,
-        outputs=image
+        inference,
+        outputs=[
+            image,
+            info
+        ]
     )
+
+    gr.Image(
+        value="logo.png",
+        show_label=False,
+        width=400,
+        interactive=False,
+        container=False
+    )
+
+    gr.Markdown("""
+        <div align="center">
+        <img src="/gradio_api/file=logo.png" width="400">
+        </div>
+        """)
 
 demo.launch(
     server_name="0.0.0.0",
