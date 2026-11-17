@@ -62,138 +62,34 @@ class VideoCamera:
                 verbose=False
             )
 
-            inference_ms = (
-                                   time.perf_counter() - t0
-                           ) * 1000
+            inference_ms = (time.perf_counter() - t0) * 1000
 
             result = results[0]
 
-            segmented = result.plot(boxes=False)
+            objects, tile_areas = self.extract_objects(result)
 
-            segmented = cv2.cvtColor(
-                segmented,
-                cv2.COLOR_BGR2RGB
-            )
-
-            tiles = []
-            tile_areas = []
-            valid_tiles = []
-            objects = []
-
-            if result.masks is not None:
-
-                tile_areas = []
-
-                # primo ciclo for per calcolare l'area media
-                for i, contour in enumerate(result.masks.xy):
-
-                    class_id = int(result.boxes.cls[i])
-                    class_name = self.model.names[class_id]
-
-                    if class_name.lower() != "tile":
-                        continue
-
-                    cnt = contour.astype(np.int32)
-
-                    area = cv2.contourArea(cnt)
-
-                    tile_areas.append(area)
-
-                AREA_TOL = 0.40
-                reference_area = np.median(tile_areas)
-                min_area = reference_area * (1 - AREA_TOL)
-                max_area = reference_area * (1 + AREA_TOL)
-
-                # secondo ciclo per determinare i pezzi buoni
-                for i, contour in enumerate(result.masks.xy):
-
-                    class_id = int(result.boxes.cls[i])
-
-                    # soglia su confidence
-                    conf = float(result.boxes.conf[i])
-                    if conf < 0.50:
-                        continue
-
-                    # solo le classi Tile
-                    class_name = self.model.names[class_id]
-                    if class_name.lower() != "tile":
-                        continue
-                    cnt = contour.astype(np.int32)
-
-                    rect = cv2.minAreaRect(cnt)
-                    area = cv2.contourArea(cnt)
-                    (cx, cy) = rect[0]
-
-                    tiles.append({
-                        "cx": cx,
-                        "cy": cy,
-                        "contour": cnt
-                    })
-
-                    objects.append({
-                        "class_name": class_name,
-                        "contour": cnt,
-                        "area": area,
-                        "cx": cx,
-                        "cy": cy
-                    })
-
-                    if class_name.lower() == "tile":
-
-                        if min_area <= area <= max_area:
-                            valid_tiles.append({
-                                "cx": cx,
-                                "cy": cy,
-                                "area": area,
-                                "contour": cnt
-                            })
-
-                    cv2.circle(
-                        segmented,
-                        (int(cx), int(cy)),
-                        5,
-                        (0, 0, 255),
-                        -1
-                    )
-
+            valid_tiles, min_area, max_area = \
+                self.classify_tiles(objects)
 
             rows = self.find_rows(valid_tiles)
 
-            # disegna le file sulla foto
+            segmented = self.draw_segmentation(
+                frame,
+                objects,
+                min_area,
+                max_area
+            )
 
-            for i, row in enumerate(rows):
-                y = int(row["mean_y"])
+            segmented = self.draw_rows(
+                segmented,
+                rows
+            )
 
-                cv2.line(
-                    segmented,
-                    (0, y),
-                    (segmented.shape[1], y),
-                    (255, 0, 0),
-                    2
-                )
-
-                cv2.putText(
-                    segmented,
-                    f"Row {i + 1}: {len(row['tiles'])}",
-                    (20, y - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.7,
-                    (255, 0, 0),
-                    2
-                )
-
-            # INFO
-            row_info = []
-
-            for i, row in enumerate(rows):
-                row_info.append(
-                    f"R{i + 1}: {len(row['tiles'])}"
-                )
-
-            info = (
-                    f"Rows: {len(rows)} | "
-                    + " | ".join(row_info)
-                    + f" | Inference: {inference_ms:.1f} ms"
+            info = self.build_info(
+                rows,
+                objects,
+                valid_tiles,
+                inference_ms
             )
 
             return segmented, info
@@ -242,6 +138,193 @@ class VideoCamera:
         ]
 
         return rows
+
+    def extract_objects(self, result):
+
+        objects = []
+        tile_areas = []
+
+        if result.masks is None:
+            return objects, tile_areas
+
+        for i, contour in enumerate(result.masks.xy):
+
+            conf = float(result.boxes.conf[i])
+
+            if conf < 0.50:
+                continue
+
+            class_id = int(result.boxes.cls[i])
+            class_name = self.model.names[class_id]
+
+            cnt = contour.astype(np.int32)
+
+            area = cv2.contourArea(cnt)
+
+            rect = cv2.minAreaRect(cnt)
+            (cx, cy) = rect[0]
+
+            obj = {
+                "class_name": class_name,
+                "contour": cnt,
+                "area": area,
+                "cx": cx,
+                "cy": cy
+            }
+
+            objects.append(obj)
+
+            if class_name.lower() == "tile":
+                tile_areas.append(area)
+
+        return objects, tile_areas
+
+    def classify_tiles(self, objects):
+
+        tile_areas = [
+            obj["area"]
+            for obj in objects
+            if obj["class_name"].lower() == "tile"
+        ]
+
+        if not tile_areas:
+            return [], 0, 0
+
+        reference_area = np.median(tile_areas)
+
+        AREA_TOL = 0.40
+
+        min_area = reference_area * (1 - AREA_TOL)
+        max_area = reference_area * (1 + AREA_TOL)
+
+        valid_tiles = []
+
+        for obj in objects:
+
+            obj["valid"] = False
+
+            if obj["class_name"].lower() != "tile":
+                continue
+
+            if min_area <= obj["area"] <= max_area:
+                obj["valid"] = True
+
+                valid_tiles.append({
+                    "cx": obj["cx"],
+                    "cy": obj["cy"],
+                    "area": obj["area"],
+                    "contour": obj["contour"]
+                })
+
+        return valid_tiles, min_area, max_area
+
+    def draw_segmentation(self, frame, objects, min_area,max_area):
+
+        image = frame.copy()
+        overlay = frame.copy()
+
+        for obj in objects:
+
+            if obj["class_name"].lower() != "tile":
+
+                color = (255, 0, 0)
+
+            elif min_area <= obj["area"] <= max_area:
+
+                color = (0, 255, 0)
+
+            else:
+
+                color = (0, 0, 255)
+
+            cv2.fillPoly(
+                overlay,
+                [obj["contour"]],
+                color
+            )
+
+        image = cv2.addWeighted(
+            overlay,
+            0.35,
+            image,
+            0.65,
+            0
+        )
+
+        for obj in objects:
+
+            if obj["class_name"].lower() != "tile":
+
+                color = (255, 0, 0)
+
+            elif min_area <= obj["area"] <= max_area:
+
+                color = (0, 255, 0)
+
+            else:
+
+                color = (0, 0, 255)
+
+            cv2.drawContours(
+                image,
+                [obj["contour"]],
+                -1,
+                color,
+                2
+            )
+
+        return image
+
+    def draw_rows(self, image, rows):
+
+        for i, row in enumerate(rows):
+            y = int(row["mean_y"])
+
+            cv2.line(
+                image,
+                (0, y),
+                (image.shape[1], y),
+                (255, 255, 0),
+                2
+            )
+
+            cv2.putText(
+                image,
+                f"Row {i + 1}: {len(row['tiles'])}",
+                (20, y - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (255, 255, 0),
+                2
+            )
+
+        return image
+
+    def build_info(self,rows,objects,valid_tiles,inference_ms):
+
+        row_info = []
+
+        for i, row in enumerate(rows):
+            row_info.append(
+                f"R{i + 1}: {len(row['tiles'])}"
+            )
+
+        total_tiles = sum(
+            1 for obj in objects
+            if obj["class_name"].lower() == "tile"
+        )
+
+        rejected_tiles = total_tiles - len(valid_tiles)
+
+        info = (
+                f"Rows: {len(rows)} | "
+                f"Valid Tiles: {len(valid_tiles)} | "
+                f"Rejected: {rejected_tiles} | "
+                + " | ".join(row_info)
+                + f" | Inference: {inference_ms:.1f} ms"
+        )
+
+        return info
 
     # =====================================================
     # SALVATAGGIO
