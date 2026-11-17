@@ -360,12 +360,7 @@ class VideoCamera:
 
                 if not self.row_counted:
                     self.total_tiles += len(row["tiles"])
-
                     self.row_counted = True
-
-                    print(
-                        f"Counted row: {len(row['tiles'])}"
-                    )
 
                 break
 
