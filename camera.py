@@ -5,7 +5,8 @@ import numpy as np
 import pyrealsense2 as rs
 from ultralytics import YOLO
 
-
+COUNT_AREA_TOP = 600
+COUNT_AREA_BOTTOM = 680
 
 class VideoCamera:
     def __init__(self):
@@ -16,6 +17,7 @@ class VideoCamera:
 
         self.model = YOLO(MODEL_PATH)
 
+        # pulsanti per la visualizzazione della segmentazione colorata
         self.show_rows = False
         self.show_good_tiles = False
         self.show_bad_tiles = False
@@ -24,7 +26,12 @@ class VideoCamera:
 
         self.configCamera()
 
+        # salvataggio del frame su file
         self.last_original_frame = None
+
+        # conteggio della fila in un'area
+        self.total_tiles = 0
+        self.row_in_count_zone = False
 
     def configCamera(self):
         try:
@@ -75,24 +82,13 @@ class VideoCamera:
 
             rows = self.find_rows(valid_tiles)
 
-            segmented = self.draw_segmentation(
-                frame,
-                objects,
-                min_area,
-                max_area
-            )
+            self.update_counter(rows)
 
-            segmented = self.draw_rows(
-                segmented,
-                rows
-            )
+            segmented = self.draw_segmentation(frame,objects,min_area,max_area)
+            segmented = self.draw_count_area(segmented)
+            segmented = self.draw_rows(segmented,rows)
 
-            info = self.build_info(
-                rows,
-                objects,
-                valid_tiles,
-                inference_ms
-            )
+            info = self.build_info( rows,objects,valid_tiles,inference_ms)
 
             return segmented, info
 
@@ -337,9 +333,58 @@ class VideoCamera:
                 f"Rejected:     {rejected_tiles}\n"
                 f"Area Ref:     {self.reference_area:.0f}\n"
                 f"Inference:    {inference_ms:.1f} ms\n"
+                f"Total Count:  {self.total_tiles}\n"
         )
 
         return info
+
+    def update_counter(self, rows):
+        # funzione per contare le tile quando entrano nell'area
+        row_inside_area = False
+
+
+        for row in rows:
+
+            y = row["mean_y"]
+
+            if COUNT_AREA_TOP <= y <= COUNT_AREA_BOTTOM:
+
+                row_inside_area = True
+
+                if not self.row_counted:
+                    self.total_tiles += len(row["tiles"])
+
+                    self.row_counted = True
+
+                    print(
+                        f"Counted row: {len(row['tiles'])}"
+                    )
+
+                break
+
+        if not row_inside_area:
+            self.row_counted = False
+
+    def draw_count_area(self, image):
+        overlay = image.copy()
+
+        cv2.rectangle(
+            overlay,
+            (0, COUNT_AREA_TOP),
+            (image.shape[1], COUNT_AREA_BOTTOM),
+            (0, 255, 255),
+            -1
+        )
+
+        image = cv2.addWeighted(
+            overlay,
+            0.20,
+            image,
+            0.85,
+            0
+        )
+
+        return image
 
     # =====================================================
     # SALVATAGGIO
