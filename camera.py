@@ -79,7 +79,19 @@ class VideoCamera:
 
             if result.masks is not None:
 
-                for contour in result.masks.xy:
+                for i, contour in enumerate(result.masks.xy):
+
+                    class_id = int(result.boxes.cls[i])
+
+                    # soglia su confidence
+                    conf = float(result.boxes.conf[i])
+                    if conf < 0.50:
+                        continue
+
+                    # solo le classi Tile
+                    class_name = self.model.names[class_id]
+                    if class_name.lower() != "tile":
+                        continue
                     cnt = contour.astype(np.int32)
 
                     rect = cv2.minAreaRect(cnt)
