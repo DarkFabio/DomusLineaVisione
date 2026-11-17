@@ -68,33 +68,75 @@ class VideoCamera:
 
             result = results[0]
 
-            segmented = result.plot()
+            segmented = result.plot(boxes=False)
 
             segmented = cv2.cvtColor(
                 segmented,
                 cv2.COLOR_BGR2RGB
             )
 
-            tile_count = 0
-            object_count = 0
+            tiles = []
 
-            if result.boxes is not None:
+            if result.masks is not None:
 
-                object_count = len(result.boxes)
+                for contour in result.masks.xy:
+                    cnt = contour.astype(np.int32)
 
-                for cls in result.boxes.cls:
+                    rect = cv2.minAreaRect(cnt)
 
-                    class_id = int(cls)
+                    (cx, cy) = rect[0]
 
-                    class_name = self.model.names[class_id]
+                    tiles.append({
+                        "cx": cx,
+                        "cy": cy,
+                        "contour": cnt
+                    })
 
-                    if class_name.lower() == "tile":
-                        tile_count += 1
+                    cv2.circle(
+                        segmented,
+                        (int(cx), int(cy)),
+                        5,
+                        (0, 0, 255),
+                        -1
+                    )
+
+            rows = self.find_rows(tiles)
+
+            # disegna le file sulla foto
+
+            for i, row in enumerate(rows):
+                y = int(row["mean_y"])
+
+                cv2.line(
+                    segmented,
+                    (0, y),
+                    (segmented.shape[1], y),
+                    (255, 0, 0),
+                    2
+                )
+
+                cv2.putText(
+                    segmented,
+                    f"Row {i + 1}: {len(row['tiles'])}",
+                    (20, y - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7,
+                    (255, 0, 0),
+                    2
+                )
+
+            # INFO
+            row_info = []
+
+            for i, row in enumerate(rows):
+                row_info.append(
+                    f"R{i + 1}: {len(row['tiles'])}"
+                )
 
             info = (
-                f"Tile: {tile_count}    |    "
-                f"Objects: {object_count}    |    "
-                f"Inference: {inference_ms:.1f} ms"
+                    f"Rows: {len(rows)} | "
+                    + " | ".join(row_info)
+                    + f" | Inference: {inference_ms:.1f} ms"
             )
 
             return segmented, info
@@ -104,6 +146,38 @@ class VideoCamera:
             no_cam_img = cv2.imread('NoCam.jpg')
             return no_cam_img, "No Cam connected"
 
+    def find_rows(self, tiles, tolerance=50):
+
+        rows = []
+
+        tiles = sorted(
+            tiles,
+            key=lambda x: x["cy"]
+        )
+
+        for tile in tiles:
+
+            assigned = False
+
+            for row in rows:
+
+                if abs(tile["cy"] - row["mean_y"]) < tolerance:
+                    row["tiles"].append(tile)
+
+                    row["mean_y"] = np.mean(
+                        [t["cy"] for t in row["tiles"]]
+                    )
+
+                    assigned = True
+                    break
+
+            if not assigned:
+                rows.append({
+                    "tiles": [tile],
+                    "mean_y": tile["cy"]
+                })
+
+        return rows
 
     # =====================================================
     # SALVATAGGIO
