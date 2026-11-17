@@ -4,7 +4,7 @@ from camera import VideoCamera
 
 camera = VideoCamera()
 
-with gr.Blocks() as demo:
+with gr.Blocks(title="Tiles Vision") as demo:
 
     gr.Markdown("# Domus Linea Vision")
 
