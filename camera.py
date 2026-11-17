@@ -50,7 +50,7 @@ class VideoCamera:
                 1280,
                 720,
                 rs.format.bgr8,
-                15
+                6
             )
 
             self.pipeline.start(self.config)
