@@ -68,8 +68,7 @@ class VideoCamera:
 
             objects, tile_areas = self.extract_objects(result)
 
-            valid_tiles, min_area, max_area = \
-                self.classify_tiles(objects)
+            valid_tiles, min_area, max_area = self.classify_tiles(objects)
 
             rows = self.find_rows(valid_tiles)
 
@@ -190,12 +189,10 @@ class VideoCamera:
         if not tile_areas:
             return [], 0, 0
 
-        reference_area = np.median(tile_areas)
+        self.reference_area = np.median(tile_areas)
 
-        AREA_TOL = 0.40
-
-        min_area = reference_area * (1 - AREA_TOL)
-        max_area = reference_area * (1 + AREA_TOL)
+        min_area = self.reference_area * (1 - 0.3)
+        max_area = self.reference_area * (1 + 0.7)
 
         valid_tiles = []
 
@@ -227,7 +224,7 @@ class VideoCamera:
 
             if obj["class_name"].lower() != "tile":
 
-                color = (255, 0, 0)
+                color = (0, 0, 255)
 
             elif min_area <= obj["area"] <= max_area:
 
@@ -235,35 +232,13 @@ class VideoCamera:
 
             else:
 
-                color = (0, 0, 255)
+                color = (255, 0, 0)
 
             cv2.fillPoly(
                 overlay,
                 [obj["contour"]],
                 color
             )
-
-        image = cv2.addWeighted(
-            overlay,
-            0.35,
-            image,
-            0.65,
-            0
-        )
-
-        for obj in objects:
-
-            if obj["class_name"].lower() != "tile":
-
-                color = (255, 0, 0)
-
-            elif min_area <= obj["area"] <= max_area:
-
-                color = (0, 255, 0)
-
-            else:
-
-                color = (0, 0, 255)
 
             cv2.drawContours(
                 image,
@@ -272,6 +247,37 @@ class VideoCamera:
                 color,
                 2
             )
+
+            label = (
+                f"{obj['class_name']} "
+                f"{int(obj['area'])}"
+            )
+
+            cv2.putText(
+                image,
+                label,
+                (int(obj["cx"]) - 40, int(obj["cy"]) - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                color,
+                2
+            )
+
+            cv2.circle(
+                image,
+                (int(obj["cx"]), int(obj["cy"])),
+                5,
+                (255, 255, 255),
+                -1
+            )
+
+        image = cv2.addWeighted(
+            overlay,
+            0.25,
+            image,
+            0.65,
+            0
+        )
 
         return image
 
@@ -317,11 +323,11 @@ class VideoCamera:
         rejected_tiles = total_tiles - len(valid_tiles)
 
         info = (
-                f"Rows: {len(rows)} | "
-                f"Valid Tiles: {len(valid_tiles)} | "
-                f"Rejected: {rejected_tiles} | "
-                + " | ".join(row_info)
-                + f" | Inference: {inference_ms:.1f} ms"
+                f"Rows:         {len(rows)}\n"
+                f"Valid Tiles:  {len(valid_tiles)}\n"
+                f"Rejected:     {rejected_tiles}\n"
+                f"Area Ref:     {self.reference_area:.0f}\n"
+                f"Inference:    {inference_ms:.1f} ms\n"
         )
 
         return info
