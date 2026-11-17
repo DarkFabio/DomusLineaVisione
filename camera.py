@@ -16,9 +16,15 @@ class VideoCamera:
 
         self.model = YOLO(MODEL_PATH)
 
+        self.show_rows = False
+        self.show_good_tiles = False
+        self.show_bad_tiles = False
+        self.show_objects = False
+        self.show_labels = False
+
         self.configCamera()
 
-        last_original_frame = None
+        self.last_original_frame = None
 
     def configCamera(self):
         try:
@@ -39,10 +45,7 @@ class VideoCamera:
 
     def inference(self):
 
-        global last_original_frame
-
         try:
-
             frames = self.pipeline.wait_for_frames()
             color_frame = frames.get_color_frame()
 
@@ -53,7 +56,7 @@ class VideoCamera:
                 color_frame.get_data()
             )
 
-            last_original_frame = frame.copy()
+            self.last_original_frame = frame.copy()
 
             t0 = time.perf_counter()
 
@@ -223,15 +226,18 @@ class VideoCamera:
         for obj in objects:
 
             if obj["class_name"].lower() != "tile":
-
+                if not self.show_objects:
+                    continue
                 color = (0, 0, 255)
 
             elif min_area <= obj["area"] <= max_area:
-
+                if not self.show_good_tiles:
+                    continue
                 color = (0, 255, 0)
 
             else:
-
+                if not self.show_bad_tiles:
+                    continue
                 color = (255, 0, 0)
 
             cv2.fillPoly(
@@ -284,6 +290,9 @@ class VideoCamera:
     def draw_rows(self, image, rows):
 
         for i, row in enumerate(rows):
+            if not self.show_rows:
+                return image
+
             y = int(row["mean_y"])
 
             cv2.line(
@@ -337,10 +346,7 @@ class VideoCamera:
     # =====================================================
 
     def save_image(self):
-
-        global last_original_frame
-
-        if last_original_frame is None:
+        if self.last_original_frame is None:
             return "Nessun frame disponibile"
 
         filename = os.path.join(
@@ -348,6 +354,6 @@ class VideoCamera:
             f"img_{time.strftime('%Y%m%d_%H%M%S')}.png"
         )
 
-        cv2.imwrite(filename, last_original_frame)
+        cv2.imwrite(filename, self.last_original_frame)
 
         return f"Salvato: {filename}"
