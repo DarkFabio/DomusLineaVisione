@@ -33,6 +33,13 @@ class VideoCamera:
         self.total_tiles = 0
         self.row_in_count_zone = False
 
+    def set_visibility(self, selected):
+        self.show_rows = "Rows" in selected
+        self.show_good_tiles = "Good" in selected
+        self.show_bad_tiles = "Bad" in selected
+        self.show_objects = "Objects" in selected
+
+
     def configCamera(self):
         try:
             self.pipeline = rs.pipeline()

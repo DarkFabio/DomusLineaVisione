@@ -6,68 +6,41 @@ camera = VideoCamera()
 
 with gr.Blocks() as demo:
 
-    gr.Markdown(
-        "# Domus Linea Vision"
-    )
+    gr.Markdown("# Domus Linea Vision")
 
-    image = gr.Image(
-        label="Live View"
-    )
-    with gr.Row():
-        info = gr.Textbox(
-            label="Risultati",
-            interactive=False
-        )
+    with gr.Row(equal_height=True):
+        image = gr.Image(label="Live View", scale=9)
+        with gr.Column(scale = 1):
+            view_group = gr.CheckboxGroup(
+                choices=["Rows", "Good", "Bad", "Objects"],
+                label="Visualizzazione",
+                value=[]
+            )
 
-        with gr.Accordion(
-                "Visualizzazione",
-                open=True
-        ):
-            with gr.Column():
-                show_rows = gr.Checkbox(
-                    label="Rows"
-                )
+            view_group.change(
+                fn=camera.set_visibility,
+                inputs=view_group
+            )
 
-                show_good_tiles = gr.Checkbox(
-                    label="Good"
-                )
+            info = gr.Textbox(label="Risultati", interactive=False)
 
-                show_bad_tiles = gr.Checkbox(
-                    label="Bad"
-                )
-
-                show_objects = gr.Checkbox(
-                    label="Objects"
-                )
-
-                show_rows.change(
-                    lambda x: setattr(camera, "show_rows", x),
-                    inputs=show_rows
-                )
-
-                show_good_tiles.change(
-                    lambda x: setattr(camera, "show_good_tiles", x),
-                    inputs=show_good_tiles
-                )
-
-                show_bad_tiles.change(
-                    lambda x: setattr(camera, "show_bad_tiles", x),
-                    inputs=show_bad_tiles
-                )
-
-                show_objects.change(
-                    lambda x: setattr(camera, "show_objects", x),
-                    inputs=show_objects
-                )
-
-
-    with gr.Row():
+    with gr.Row(equal_height=True):
         save_btn = gr.Button(
-            "Salva immagine originale"
+            "Salva immagine originale",
+            scale=3
         )
 
         save_status = gr.Textbox(
-            label="Salvataggio"
+            label="Salvataggio",
+            scale=5
+        )
+
+        gr.Image(
+            value="logo.png",
+            show_label=False,
+            width=400,
+            interactive=False,
+            scale=2
         )
 
     save_btn.click(
@@ -85,12 +58,7 @@ with gr.Blocks() as demo:
         ]
     )
 
-    gr.Image(
-        value="logo.png",
-        show_label=False,
-        width=400,
-        interactive=False,
-    )
+
 
 demo.launch(
     server_name="0.0.0.0",
