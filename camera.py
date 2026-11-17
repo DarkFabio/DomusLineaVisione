@@ -76,9 +76,35 @@ class VideoCamera:
             )
 
             tiles = []
+            tile_areas = []
+            valid_tiles = []
+            objects = []
 
             if result.masks is not None:
 
+                tile_areas = []
+
+                # primo ciclo for per calcolare l'area media
+                for i, contour in enumerate(result.masks.xy):
+
+                    class_id = int(result.boxes.cls[i])
+                    class_name = self.model.names[class_id]
+
+                    if class_name.lower() != "tile":
+                        continue
+
+                    cnt = contour.astype(np.int32)
+
+                    area = cv2.contourArea(cnt)
+
+                    tile_areas.append(area)
+
+                AREA_TOL = 0.40
+                reference_area = np.median(tile_areas)
+                min_area = reference_area * (1 - AREA_TOL)
+                max_area = reference_area * (1 + AREA_TOL)
+
+                # secondo ciclo per determinare i pezzi buoni
                 for i, contour in enumerate(result.masks.xy):
 
                     class_id = int(result.boxes.cls[i])
@@ -95,7 +121,7 @@ class VideoCamera:
                     cnt = contour.astype(np.int32)
 
                     rect = cv2.minAreaRect(cnt)
-
+                    area = cv2.contourArea(cnt)
                     (cx, cy) = rect[0]
 
                     tiles.append({
@@ -103,6 +129,24 @@ class VideoCamera:
                         "cy": cy,
                         "contour": cnt
                     })
+
+                    objects.append({
+                        "class_name": class_name,
+                        "contour": cnt,
+                        "area": area,
+                        "cx": cx,
+                        "cy": cy
+                    })
+
+                    if class_name.lower() == "tile":
+
+                        if min_area <= area <= max_area:
+                            valid_tiles.append({
+                                "cx": cx,
+                                "cy": cy,
+                                "area": area,
+                                "contour": cnt
+                            })
 
                     cv2.circle(
                         segmented,
@@ -112,7 +156,8 @@ class VideoCamera:
                         -1
                     )
 
-            rows = self.find_rows(tiles)
+
+            rows = self.find_rows(valid_tiles)
 
             # disegna le file sulla foto
 
@@ -158,7 +203,7 @@ class VideoCamera:
             no_cam_img = cv2.imread('NoCam.jpg')
             return no_cam_img, "No Cam connected"
 
-    def find_rows(self, tiles, tolerance=50):
+    def find_rows(self, tiles, tolerance=50, min_tiles_per_row=2):
 
         rows = []
 
@@ -188,6 +233,13 @@ class VideoCamera:
                     "tiles": [tile],
                     "mean_y": tile["cy"]
                 })
+
+        # tolgo le file che contengono meno mattonelle del minino impostato
+        rows = [
+            row
+            for row in rows
+            if len(row["tiles"]) >= min_tiles_per_row
+        ]
 
         return rows
 
