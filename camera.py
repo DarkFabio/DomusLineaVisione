@@ -368,10 +368,17 @@ class VideoCamera:
                     self.total_tiles += len(row["tiles"])
                     self.row_counted = True
 
+                    self.last_event = {
+                        "tiles_row": len(row["tiles"]),
+                        "good_tiles": len(row["tiles"]),
+                        "broken_tiles": 0
+                    }
+
                 break
 
         if not row_inside_area:
             self.row_counted = False
+            self.last_event =  None
 
     def draw_count_area(self, image):
         overlay = image.copy()

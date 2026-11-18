@@ -7,6 +7,18 @@ from DataLogger import DataLogger
 camera = VideoCamera()
 data_logger = DataLogger()
 
+def salva_eventi():
+    # prende l'evento generato dalla telecamera e scrive una riga sul database con il metodo dentro a DataLogger
+    if camera.last_event is not None:
+
+        data_logger.inserisci_evento(
+            camera.last_event["tiles_row"],
+            camera.last_event["good_tiles"],
+            camera.last_event["broken_tiles"]
+        )
+
+        camera.last_event = None
+
 with gr.Blocks(title="Tiles Vision") as demo:
 
     gr.Markdown("# Domus Linea Vision")
@@ -99,12 +111,19 @@ with gr.Blocks(title="Tiles Vision") as demo:
     )
 
     # timer aggiornamento grafico
-    timer_grafico = gr.Timer(0.03)
+    timer_grafico = gr.Timer(60)
 
     timer_grafico.tick(
         fn=data_logger.carica_dati_periodo,
         inputs=[data_inizio, data_fine],
         outputs=grafico
+    )
+
+    # timer inserimento evento dentro al database
+    timer_database = gr.Timer(1)
+
+    timer_database.tick(
+        fn=salva_eventi
     )
 
 

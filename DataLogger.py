@@ -84,3 +84,23 @@ class DataLogger():
         )
 
         return df_finale
+
+    def inserisci_evento(self, tiles_row, good_tiles, broken_tiles):
+        try:
+            # Crea un DataFrame di una riga con i nomi esatti delle colonne
+            df_nuovo = pd.DataFrame([{
+                "tiles_row": tiles_row,
+                "good_tiles": good_tiles,
+                "broken_tiles": broken_tiles
+            }])
+
+            # Scrive sul database usando self.engine
+            df_nuovo.to_sql(
+                name="production_events",
+                con=self.engine,
+                if_exists="append",
+                index=False  # evita di inserire l'indice del DataFrame come colonna
+            )
+            #print("Dati inseriti correttamente.")
+        except Exception as e:
+            print(f"Errore durante inserisci_evento: {e}")
