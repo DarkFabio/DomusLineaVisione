@@ -22,8 +22,6 @@ def salva_eventi():
 
 with gr.Blocks(title="Tiles Vision") as demo:
 
-    gr.Markdown("# Domus Linea Vision")
-
     with gr.Row(equal_height=True):
         image = gr.Image(label="Live View", scale=9)
 
@@ -65,8 +63,6 @@ with gr.Blocks(title="Tiles Vision") as demo:
             btn_oggi = gr.Button("Solo Oggi", variant="primary")
             btn_7gg = gr.Button("Ultimi 7 Giorni", variant="primary")
             btn_30gg = gr.Button("Ultimi 30 Giorni", variant="primary")
-
-    gr.Markdown("### Analisi Produzione per Periodo")
 
     grafico = gr.Plot(
         value=data_logger.crea_grafico_periodo(
