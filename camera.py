@@ -388,20 +388,3 @@ class VideoCamera:
         )
 
         return image
-
-    # =====================================================
-    # SALVATAGGIO
-    # =====================================================
-
-    def save_image(self):
-        if self.last_original_frame is None:
-            return "Nessun frame disponibile"
-
-        filename = os.path.join(
-            self.SAVE_FOLDER,
-            f"img_{time.strftime('%Y%m%d_%H%M%S')}.png"
-        )
-
-        cv2.imwrite(filename, self.last_original_frame)
-
-        return f"Salvato: {filename}"

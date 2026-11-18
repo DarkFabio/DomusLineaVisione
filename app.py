@@ -25,15 +25,6 @@ with gr.Blocks(title="Tiles Vision") as demo:
             info = gr.Textbox(label="Risultati", interactive=False)
 
     with gr.Row(equal_height=True):
-        save_btn = gr.Button(
-            "Salva immagine originale",
-            scale=3
-        )
-
-        save_status = gr.Textbox(
-            label="Salvataggio",
-            scale=5
-        )
 
         gr.Image(
             value="logo.png",
@@ -42,11 +33,6 @@ with gr.Blocks(title="Tiles Vision") as demo:
             interactive=False,
             scale=2
         )
-
-    save_btn.click(
-        fn=camera.save_image,
-        outputs=save_status
-    )
 
     timer = gr.Timer(0.03)
 
