@@ -4,13 +4,18 @@ import time
 import numpy as np
 import pyrealsense2 as rs
 from ultralytics import YOLO
+from pathlib import Path
 
 COUNT_AREA_TOP = 600
 COUNT_AREA_BOTTOM = 680
 
 class VideoCamera:
     def __init__(self):
-        MODEL_PATH = "best.engine"
+        if Path("best.engine").is_file():
+            MODEL_PATH = "best.engine"
+        else:
+            MODEL_PATH = "best.pt"
+
         self.SAVE_FOLDER = "saved_images"
 
         os.makedirs(self.SAVE_FOLDER, exist_ok=True)
