@@ -72,7 +72,7 @@ class VideoCamera:
             )
 
             self.last_original_frame = frame.copy()
-
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             t0 = time.perf_counter()
 
             results = self.model.predict(

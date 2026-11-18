@@ -48,7 +48,7 @@ with gr.Blocks(title="Tiles Vision") as demo:
         outputs=save_status
     )
 
-    timer = gr.Timer(0.1)
+    timer = gr.Timer(0.03)
 
     timer.tick(
         camera.inference,
