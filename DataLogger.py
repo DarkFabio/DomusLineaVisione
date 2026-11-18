@@ -45,8 +45,8 @@ class DataLogger():
         # CASO 2: Fino a un mese (31 giorni) -> Raggruppa per GIORNO
         elif giorni_diff <= 31:
             range_date = pd.date_range(start=inizio_str, end=fine_str, freq="D")
-            etichette = range_date.strftime("%Y-%m-%d").tolist()
-            formato_dt = "%Y-%m-%d"
+            etichette = range_date.strftime("%d-%m").tolist()
+            formato_dt = "%d-%m"
 
         # CASO 3: Più di un mese (> 31 giorni) -> Raggruppa per MESE
         else:
@@ -67,6 +67,8 @@ class DataLogger():
             df["timestamp"] = pd.to_datetime(df["timestamp"])
             df["periodo"] = df["timestamp"].dt.strftime(formato_dt)
             df_agg = df.groupby("periodo", as_index=False)[["tiles_row", "good_tiles", "broken_tiles"]].sum()
+            # Calcoli il residuo per le totali (evitando numeri negativi per sicurezza)
+            df_agg["tiles_row"] = (df_agg["tiles_row"] - df_agg["good_tiles"] - df_agg["broken_tiles"]).clip(lower=0)
             # Riempie eventuali ore, giorni o mesi senza produzione con 0
             df_agg = df_agg.set_index("periodo").reindex(etichette, fill_value=0).reset_index()
 

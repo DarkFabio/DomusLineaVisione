@@ -25,6 +25,7 @@ with gr.Blocks(title="Tiles Vision") as demo:
 
     with gr.Row(equal_height=True):
         image = gr.Image(label="Live View", scale=9)
+
         with gr.Column(scale = 1):
             gr.Image(
                 value="logo.png",
@@ -36,7 +37,7 @@ with gr.Blocks(title="Tiles Vision") as demo:
             view_group = gr.CheckboxGroup(
                 choices=["Rows", "Good", "Bad", "Objects"],
                 label="Visualizzazione",
-                value=[]
+                value=["Rows", "Good", "Bad"]
             )
 
             view_group.change(
@@ -46,38 +47,37 @@ with gr.Blocks(title="Tiles Vision") as demo:
 
             info = gr.Textbox(label="Risultati", interactive=False)
 
-    gr.Markdown("### Analisi Produzione per Periodo")
+        with gr.Column(scale = 1):
+            data_inizio = gr.DateTime(
+                label="Data Inizio",
+                value=data_logger.oggi,
+                include_time=False,
+                type="string"
+            )
+            data_fine = gr.DateTime(
+                label="Data Fine",
+                value=data_logger.oggi,
+                include_time=False,
+                type="string"
+            )
 
-    with gr.Row(equal_height=True):
-        data_inizio = gr.DateTime(
-            label="Data Inizio",
-            value=data_logger.sette_giorni_fa,
-            include_time=False,
-            type="string"
-        )
-        data_fine = gr.DateTime(
-            label="Data Fine",
-            value=data_logger.oggi,
-            include_time=False,
-            type="string"
-        )
-
-        with gr.Column():
             btn_oggi = gr.Button("Solo Oggi", variant="primary")
             btn_7gg = gr.Button("Ultimi 7 Giorni", variant="primary")
             btn_30gg = gr.Button("Ultimi 30 Giorni", variant="primary")
 
+    gr.Markdown("### Analisi Produzione per Periodo")
+
     grafico = gr.BarPlot(
-        value=data_logger.carica_dati_periodo(data_logger.sette_giorni_fa, data_logger.oggi),
+        value=data_logger.carica_dati_periodo(data_logger.oggi, data_logger.oggi),
         x="periodo",
         y="Quantità",
         color="Tipologia",
         color_map={"Totali": "#3b82f6", "Buone": "#22c55e", "Rotte": "#ef4444"},
-        title="Riepilogo Produzione Mattonelle",
-        x_title="Periodo (Ore o Giorni)",
+        title="Produzione Forno",
+        x_title="Periodo",
         y_title="Numero Mattonelle",
         tooltip=["periodo", "Tipologia", "Quantità"],
-        height=600
+        height=500
     )
 
     # Aggiorna il grafico quando cambia una delle due date
