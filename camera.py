@@ -38,6 +38,7 @@ class VideoCamera:
         self.total_tiles = 0
         self.row_in_count_zone = False
         self.row_counted = False
+        self.last_event = None
 
     def set_visibility(self, selected):
         self.show_rows = "Rows" in selected
