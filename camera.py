@@ -10,7 +10,7 @@ COUNT_AREA_BOTTOM = 680
 
 class VideoCamera:
     def __init__(self):
-        MODEL_PATH = "best.pt"
+        MODEL_PATH = "best.engine"
         self.SAVE_FOLDER = "saved_images"
 
         os.makedirs(self.SAVE_FOLDER, exist_ok=True)
@@ -32,6 +32,7 @@ class VideoCamera:
         # conteggio della fila in un'area
         self.total_tiles = 0
         self.row_in_count_zone = False
+        self.row_counted = False
 
     def set_visibility(self, selected):
         self.show_rows = "Rows" in selected
@@ -50,7 +51,7 @@ class VideoCamera:
                 1280,
                 720,
                 rs.format.bgr8,
-                6
+                30
             )
 
             self.pipeline.start(self.config)
