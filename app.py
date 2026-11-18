@@ -12,7 +12,7 @@ def salva_eventi():
     if camera.last_event is not None:
 
         data_logger.inserisci_evento(
-            camera.last_event["tiles_row"],
+            8,
             camera.last_event["good_tiles"],
             camera.last_event["broken_tiles"]
         )
