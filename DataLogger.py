@@ -67,8 +67,6 @@ class DataLogger():
             df["timestamp"] = pd.to_datetime(df["timestamp"])
             df["periodo"] = df["timestamp"].dt.strftime(formato_dt)
             df_agg = df.groupby("periodo", as_index=False)[["tiles_row", "good_tiles", "broken_tiles"]].sum()
-            # Calcoli il residuo per le totali (evitando numeri negativi per sicurezza)
-            df_agg["tiles_row"] = (df_agg["tiles_row"] - df_agg["good_tiles"] - df_agg["broken_tiles"]).clip(lower=0)
             # Riempie eventuali ore, giorni o mesi senza produzione con 0
             df_agg = df_agg.set_index("periodo").reindex(etichette, fill_value=0).reset_index()
 
