@@ -1,6 +1,7 @@
 
 from datetime import datetime, timedelta
 import gradio as gr
+import plotly.graph_objects as go
 from camera import VideoCamera
 from DataLogger import DataLogger
 
@@ -67,23 +68,17 @@ with gr.Blocks(title="Tiles Vision") as demo:
 
     gr.Markdown("### Analisi Produzione per Periodo")
 
-    grafico = gr.BarPlot(
-        value=data_logger.carica_dati_periodo(data_logger.oggi, data_logger.oggi),
-        x="periodo",
-        y="Quantità",
-        color="Tipologia",
-        color_map={"Totali": "#3b82f6", "Buone": "#22c55e", "Rotte": "#ef4444"},
-        title="Produzione Forno",
-        x_title="Periodo",
-        y_title="Numero Mattonelle",
-        tooltip=["periodo", "Tipologia", "Quantità"],
-        height=500
+    grafico = gr.Plot(
+        value=data_logger.crea_grafico_periodo(
+            data_logger.oggi,
+            data_logger.oggi
+        )
     )
 
     # Aggiorna il grafico quando cambia una delle due date
     for selettore in [data_inizio, data_fine]:
         selettore.change(
-            fn=data_logger.carica_dati_periodo,
+            fn=data_logger.crea_grafico_periodo,
             inputs=[data_inizio, data_fine],
             outputs=grafico
         )
@@ -114,7 +109,7 @@ with gr.Blocks(title="Tiles Vision") as demo:
     timer_grafico = gr.Timer(60)
 
     timer_grafico.tick(
-        fn=data_logger.carica_dati_periodo,
+        fn=data_logger.crea_grafico_periodo,
         inputs=[data_inizio, data_fine],
         outputs=grafico
     )
