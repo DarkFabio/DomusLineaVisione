@@ -23,11 +23,10 @@ class VideoCamera:
         self.model = YOLO(MODEL_PATH)
 
         # pulsanti per la visualizzazione della segmentazione colorata
-        self.show_rows = False
-        self.show_good_tiles = False
-        self.show_bad_tiles = False
+        self.show_rows = True
+        self.show_good_tiles = True
+        self.show_bad_tiles = True
         self.show_objects = False
-        self.show_labels = False
 
         self.configCamera()
 
@@ -35,7 +34,6 @@ class VideoCamera:
         self.last_original_frame = None
 
         # conteggio della fila in un'area
-        self.total_tiles = 0
         self.row_in_count_zone = False
         self.row_counted = False
         self.last_event = None
@@ -66,7 +64,7 @@ class VideoCamera:
 
     def inference(self):
 
-        try:
+        # try:
             frames = self.pipeline.wait_for_frames()
             color_frame = frames.get_color_frame()
 
@@ -92,9 +90,9 @@ class VideoCamera:
 
             objects, tile_areas = self.extract_objects(result)
 
-            valid_tiles, min_area, max_area = self.classify_tiles(objects)
+            total_tiles, min_area, max_area = self.classify_tiles(objects)
 
-            rows = self.find_rows(valid_tiles)
+            rows = self.find_rows(total_tiles)
 
             self.update_counter(rows)
 
@@ -102,16 +100,16 @@ class VideoCamera:
             segmented = self.draw_count_area(segmented)
             segmented = self.draw_rows(segmented,rows)
 
-            info = self.build_info( rows,objects,valid_tiles,inference_ms)
+            info = self.build_info( rows,objects,total_tiles,inference_ms)
 
             return segmented, info
 
-        except Exception as e:
-            print(f'Error During inference: {e}')
-            no_cam_img = cv2.imread('NoCam.jpg')
-            return no_cam_img, "No Cam connected"
+        # except Exception as e:
+        #     print(f'Error During inference: {e}')
+        #     no_cam_img = cv2.imread('NoCam.jpg')
+        #     return no_cam_img, "No Cam connected"
 
-    def find_rows(self, tiles, tolerance=50, min_tiles_per_row=2):
+    def find_rows(self, tiles, tolerance=100, min_tiles_per_row=2):
 
         rows = []
 
@@ -129,9 +127,10 @@ class VideoCamera:
                 if abs(tile["cy"] - row["mean_y"]) < tolerance:
                     row["tiles"].append(tile)
 
-                    row["mean_y"] = np.mean(
-                        [t["cy"] for t in row["tiles"]]
-                    )
+                    if tile["valid"] == True:
+                        row["mean_y"] = np.mean(
+                            [t["cy"] for t in row["tiles"]]
+                        )
 
                     assigned = True
                     break
@@ -207,7 +206,7 @@ class VideoCamera:
         min_area = self.reference_area * (1 - 0.3)
         max_area = self.reference_area * (1 + 0.7)
 
-        valid_tiles = []
+        total_tiles = []
 
         for obj in objects:
 
@@ -216,17 +215,18 @@ class VideoCamera:
             if obj["class_name"].lower() != "tile":
                 continue
 
-            if min_area <= obj["area"] <= max_area:
-                obj["valid"] = True
+            obj["valid"] = True if min_area <= obj["area"] <= max_area else False
 
-                valid_tiles.append({
-                    "cx": obj["cx"],
-                    "cy": obj["cy"],
-                    "area": obj["area"],
-                    "contour": obj["contour"]
-                })
+            total_tiles.append({
+                "cx": obj["cx"],
+                "cy": obj["cy"],
+                "area": obj["area"],
+                "contour": obj["contour"],
+                "valid": obj["valid"]
+            })
 
-        return valid_tiles, min_area, max_area
+
+        return total_tiles, min_area, max_area
 
     def draw_segmentation(self, frame, objects, min_area,max_area):
 
@@ -325,29 +325,22 @@ class VideoCamera:
 
         return image
 
-    def build_info(self,rows,objects,valid_tiles,inference_ms):
+    def build_info(self, rows, objects, total_tiles, inference_ms):
 
-        row_info = []
-
-        for i, row in enumerate(rows):
-            row_info.append(
-                f"R{i + 1}: {len(row['tiles'])}"
-            )
-
-        total_tiles = sum(
-            1 for obj in objects
-            if obj["class_name"].lower() == "tile"
+        valid = sum(
+            1 for tile in total_tiles
+            if tile["valid"] == True
         )
 
-        rejected_tiles = total_tiles - len(valid_tiles)
+        rejected_tiles = len(total_tiles) - valid
 
         info = (
                 f"Rows:         {len(rows)}\n"
-                f"Valid Tiles:  {len(valid_tiles)}\n"
+                f"Total Tiles:  {len(total_tiles)}\n"
+                f"Valid:        {valid}\n"
                 f"Rejected:     {rejected_tiles}\n"
                 f"Area Ref:     {self.reference_area:.0f}\n"
                 f"Inference:    {inference_ms:.1f} ms\n"
-                f"Total Count:  {self.total_tiles}\n"
         )
 
         return info
@@ -365,14 +358,21 @@ class VideoCamera:
 
                 row_inside_area = True
 
-                if not self.row_counted:
-                    self.total_tiles += len(row["tiles"])
-                    self.row_counted = True
+                total = sum(
+                    1 for tile in row["tiles"]
+                )
+                good = sum(
+                    1 for tile in row["tiles"]
+                    if tile["valid"] == True
+                )
+                broken = total - good
 
+                if not self.row_counted:
+                    self.row_counted = True
                     self.last_event = {
-                        "tiles_row": len(row["tiles"]),
-                        "good_tiles": len(row["tiles"]),
-                        "broken_tiles": 0
+                        "tiles_row": total,
+                        "good_tiles": good,
+                        "broken_tiles": broken
                     }
 
                 break
