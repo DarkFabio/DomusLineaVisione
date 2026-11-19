@@ -3,5 +3,5 @@ ui:
 
 camera:
   min_confidence: 0.50
-  min_area_percentage: 0.3 # 0.0 - 1.0 viene usato come percentuale
-  max_area_percentage: 0.7
+  min_area_percentage: 0.25 # 0.0 - 1.0 percentuale, alzando il valore permette pezzi più piccoli ok
+  max_area_percentage: 1.0  # 0.0 - 1.0 percentuale, alzando il valore permette pezzi più grandi ok
