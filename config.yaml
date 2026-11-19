@@ -6,3 +6,6 @@ camera:
   min_area_percentage: 0.25 # 0.0 - 1.0 percentuale, alzando il valore permette pezzi più piccoli ok
   max_area_percentage: 1.0  # 0.0 - 1.0 percentuale, alzando il valore permette pezzi più grandi ok
   min_rect_ratio: 0.85 # 0.0-1.0 più è alto più deve essere un rettangolo
+
+plc:
+  ip: 192.168.250.1

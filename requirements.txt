@@ -4,3 +4,4 @@ opencv-python
 pyrealsense2
 sqlalchemy
 plotly
+pycomm3
