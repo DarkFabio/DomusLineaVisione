@@ -83,6 +83,7 @@ class VideoCamera:
             if len(ctx.query_devices()) == 0:
                 self.is_connected = False
                 print("Nessuna RealSense collegata.")
+                self.reset_camera()
                 return False
 
             self.pipeline = rs.pipeline()
