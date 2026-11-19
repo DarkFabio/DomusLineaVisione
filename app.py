@@ -4,22 +4,20 @@ import gradio as gr
 import plotly.graph_objects as go
 from camera import VideoCamera
 from DataLogger import DataLogger
-from omron_nx import OmronNX
 import yaml
+from aphyt import omron
 
 camera = VideoCamera()
 data_logger = DataLogger()
-plc = OmronNX()
 
 def salva_eventi():
     # prende l'evento generato dalla telecamera e scrive una riga sul database con il metodo dentro a DataLogger
     if camera.last_event is not None:
 
         # leggo i dati dal plc
-        plc.connect()
-        pezzi_fila = plc.read_real("pc_pezzi_per_fila")
-        area = plc.read_real("pc_area_tile")
-        plc.disconnect()
+        with omron.NSeries(camera.config["plc"]["ip"]) as eip_conn:
+            pezzi_fila = eip_conn.read_variable("pc_pezzi_per_fila")
+            area = eip_conn.read_variable("pc_area_tile")
 
         data_logger.inserisci_evento(
             pezzi_fila * area,
