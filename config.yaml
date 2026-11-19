@@ -1,0 +1,7 @@
+ui:
+  camera_heigh : 600
+
+camera:
+  min_confidence: 0.50
+  min_area_percentage: 0.3 # 0.0 - 1.0 viene usato come percentuale
+  max_area_percentage: 0.7

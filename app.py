@@ -4,6 +4,7 @@ import gradio as gr
 import plotly.graph_objects as go
 from camera import VideoCamera
 from DataLogger import DataLogger
+import yaml
 
 camera = VideoCamera()
 data_logger = DataLogger()
@@ -20,10 +21,19 @@ def salva_eventi():
 
         camera.last_event = None
 
+def load_config(config_path='config.yaml'):
+    with open(config_path, 'r') as f:
+        config = yaml.safe_load(f)
+    return config
+
+def config_update():
+    camera.config = load_config()
+    data_logger.config = load_config()
+
 with gr.Blocks(title="Tiles Vision") as demo:
 
     with gr.Row(equal_height=True):
-        image = gr.Image(label="Live View", scale=9, height=600)
+        image = gr.Image(label="Live View", scale=9, height=camera.config["ui"]["camera_height"])
 
         with gr.Column(scale = 1):
             gr.Image(
@@ -115,6 +125,13 @@ with gr.Blocks(title="Tiles Vision") as demo:
 
     timer_database.tick(
         fn=salva_eventi
+    )
+
+    # timer aggiornamento config
+    timer_config = gr.Timer(5)
+
+    timer_config.tick(
+        fn=config_update
     )
 
 

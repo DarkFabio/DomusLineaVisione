@@ -21,6 +21,7 @@ class VideoCamera:
         os.makedirs(self.SAVE_FOLDER, exist_ok=True)
 
         self.model = YOLO(MODEL_PATH)
+        self.config = None
 
         # pulsanti per la visualizzazione della segmentazione colorata
         self.show_rows = True
@@ -162,7 +163,7 @@ class VideoCamera:
 
             conf = float(result.boxes.conf[i])
 
-            if conf < 0.50:
+            if conf < self.config["camera"]["min_confidence"]:
                 continue
 
             class_id = int(result.boxes.cls[i])
@@ -203,8 +204,8 @@ class VideoCamera:
 
         self.reference_area = np.median(tile_areas)
 
-        min_area = self.reference_area * (1 - 0.3)
-        max_area = self.reference_area * (1 + 0.7)
+        min_area = self.reference_area * (1 - self.config["camera"]["min_area_percentage"])
+        max_area = self.reference_area * (1 + self.config["camera"]["max_area_percentage"])
 
         total_tiles = []
 

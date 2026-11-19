@@ -11,6 +11,8 @@ class DataLogger():
         self.oggi = datetime.now().strftime("%Y-%m-%d")
         self.sette_giorni_fa = (datetime.now() - timedelta(days=6)).strftime("%Y-%m-%d")
 
+        self.config = None
+
     def estrai_data_str(self, valore):
         if isinstance(valore, (int, float)):
             return datetime.fromtimestamp(valore).strftime("%Y-%m-%d")
