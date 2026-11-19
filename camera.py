@@ -176,10 +176,17 @@ class VideoCamera:
             rect = cv2.minAreaRect(cnt)
             (cx, cy) = rect[0]
 
+            width, height = rect[1]
+            rect_area = width * height
+
+            # calcolo il rapporto tra area effettiva e area del quadrato che la contiene
+            ratio = area / rect_area
+
             obj = {
                 "class_name": class_name,
                 "contour": cnt,
                 "area": area,
+                "area_ratio": ratio,
                 "cx": cx,
                 "cy": cy
             }
@@ -206,7 +213,7 @@ class VideoCamera:
 
         min_area = self.reference_area * (1 - self.config["camera"]["min_area_percentage"])
         max_area = self.reference_area * (1 + self.config["camera"]["max_area_percentage"])
-
+        min_ratio  = self.config["camera"]["min_rect_ratio"]
         total_tiles = []
 
         for obj in objects:
@@ -216,16 +223,16 @@ class VideoCamera:
             if obj["class_name"].lower() != "tile":
                 continue
 
-            obj["valid"] = True if min_area <= obj["area"] <= max_area else False
+            obj["valid"] = True if min_area <= obj["area"] <= max_area and obj["area_ratio"] >= min_ratio else False
 
             total_tiles.append({
                 "cx": obj["cx"],
                 "cy": obj["cy"],
                 "area": obj["area"],
+                "area_ratio": obj["area_ratio"],
                 "contour": obj["contour"],
                 "valid": obj["valid"]
             })
-
 
         return total_tiles, min_area, max_area
 
@@ -241,7 +248,7 @@ class VideoCamera:
                     continue
                 color = (0, 0, 255)
 
-            elif min_area <= obj["area"] <= max_area:
+            elif obj["valid"]:
                 if not self.show_good_tiles:
                     continue
                 color = (0, 255, 0)
@@ -266,8 +273,8 @@ class VideoCamera:
             )
 
             label = (
-                f"{obj['class_name']} "
-                f"{int(obj['area'])}"
+                f"{int(obj['area'])} px\n"
+                f"{obj['area_ratio']:.2f}"
             )
 
             cv2.putText(
