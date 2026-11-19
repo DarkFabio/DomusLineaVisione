@@ -16,8 +16,10 @@ def salva_eventi():
     if camera.last_event is not None:
 
         # leggo i dati dal plc
+        plc.connect()
         pezzi_fila = plc.read_real("pc_pezzi_per_fila")
         area = plc.read_real("pc_area_tile")
+        plc.disconnect()
 
         data_logger.inserisci_evento(
             pezzi_fila * area,
