@@ -23,7 +23,7 @@ def salva_eventi():
 with gr.Blocks(title="Tiles Vision") as demo:
 
     with gr.Row(equal_height=True):
-        image = gr.Image(label="Live View", scale=9)
+        image = gr.Image(label="Live View", scale=9, height=600)
 
         with gr.Column(scale = 1):
             gr.Image(
