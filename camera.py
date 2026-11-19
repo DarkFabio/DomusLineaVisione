@@ -29,6 +29,10 @@ class VideoCamera:
         self.show_bad_tiles = True
         self.show_objects = False
 
+        self.pipeline = None
+        self.config = None
+        self.is_connected = False
+        self.no_cam_img = cv2.imread("NoCam.jpg")
         self.configCamera()
 
         # salvataggio del frame su file
@@ -45,27 +49,68 @@ class VideoCamera:
         self.show_bad_tiles = "Bad" in selected
         self.show_objects = "Objects" in selected
 
+    def reset_camera(self):
+        print("Avvio procedura di reset telecamera...")
+        # 1. Ferma la pipeline esistente per liberare le risorse USB
+        if self.pipeline is not None:
+            try:
+                self.pipeline.stop()
+            except Exception:
+                pass
+            self.pipeline = None
+
+        # 2. Esegui il reset hardware sui dispositivi rilevati
+        ctx = rs.context()
+        devices = ctx.query_devices()
+        if len(devices) == 0:
+            print("Nessun dispositivo trovato per il reset hardware.")
+            return False
+
+        for device in devices:
+            try:
+                device.hardware_reset()
+                print("Reset hardware inviato. Attesa rinegoziazione USB...")
+            except Exception as e:
+                print(f"Errore durante hardware_reset: {e}")
+
+        # 3. Attendi che il dispositivo si ricolleghi al bus USB (almeno 4-5 secondi)
+        time.sleep(5)
+        return True
 
     def configCamera(self):
         try:
+            ctx = rs.context()
+            if len(ctx.query_devices()) == 0:
+                self.is_connected = False
+                print("Nessuna RealSense collegata.")
+                return False
+
             self.pipeline = rs.pipeline()
             self.config = rs.config()
-
             self.config.enable_stream(
-                rs.stream.color,
-                1280,
-                720,
-                rs.format.bgr8,
-                30
+                rs.stream.color, 1280, 720, rs.format.bgr8, 30
             )
-
             self.pipeline.start(self.config)
+            self.is_connected = True
+            print("Telecamera configurata e avviata con successo.")
+            return True
         except Exception as e:
+            self.is_connected = False
             print(f"Error Init Camera: {e}")
+            return False
+
+    def recover_camera(self):
+        """Tenta il reset e la riconfigurazione completa."""
+        self.reset_camera()
+        return self.configCamera()
 
     def inference(self):
+        # Se la camera non è connessa, prova a riconfigurarla prima di leggere
+        if not self.is_connected or self.pipeline is None:
+            if not self.configCamera():
+                return self.no_cam_img, "No Cam connected"
 
-        # try:
+        try:
             frames = self.pipeline.wait_for_frames()
             color_frame = frames.get_color_frame()
 
@@ -105,10 +150,15 @@ class VideoCamera:
 
             return segmented, info
 
-        # except Exception as e:
-        #     print(f'Error During inference: {e}')
-        #     no_cam_img = cv2.imread('NoCam.jpg')
-        #     return no_cam_img, "No Cam connected"
+        except Exception as e:
+            print(f"Error During inference: {e}")
+            self.is_connected = False
+
+            # Tenta il ripristino immediato (Reset + Config)
+            if self.recover_camera():
+                return self.no_cam_img, "Camera ripristinata, ripresa al prossimo ciclo"
+            else:
+                return self.no_cam_img, "No Cam connected"
 
     def find_rows(self, tiles, tolerance=100, min_tiles_per_row=2):
 
