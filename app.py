@@ -30,10 +30,13 @@ def config_update():
     camera.config = load_config()
     data_logger.config = load_config()
 
+
+config_update()
+
 with gr.Blocks(title="Tiles Vision") as demo:
 
     with gr.Row(equal_height=True):
-        image = gr.Image(label="Live View", scale=9, height=camera.config["ui"]["camera_height"])
+        image = gr.Image(label="Live View", scale=9, height=camera.config["ui"]["camera_heigh"])
 
         with gr.Column(scale = 1):
             gr.Image(
