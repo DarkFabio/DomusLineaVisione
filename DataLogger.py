@@ -88,12 +88,16 @@ class DataLogger():
         giorni_diff = (dt_fine.date() - dt_inizio.date()).days
 
         if self.periodo_attivo == "1h":
+            # Arrotonda l'inizio al blocco di 5 minuti precedente (es. 14:23 -> 14:20)
+            dt_inizio_floor = dt_inizio.replace(minute=(dt_inizio.minute // 5) * 5, second=0, microsecond=0)
+            dt_fine_floor = dt_fine.replace(minute=(dt_fine.minute // 5) * 5, second=0, microsecond=0)
+
             etichette = (
-                pd.date_range(start=dt_inizio, end=dt_fine, freq="min")
+                pd.date_range(start=dt_inizio_floor, end=dt_fine_floor, freq="5min")
                 .strftime("%H:%M")
                 .tolist()
             )
-            formato = "%H:%M"
+            formato = "5min"
         elif giorni_diff == 0:
             etichette = [f"{h:02d}:00" for h in range(24)]
             formato = "%H:00"
@@ -127,14 +131,12 @@ class DataLogger():
 
         else:
 
-            df["timestamp"] = pd.to_datetime(
-                df["timestamp"]
-            )
+            df["timestamp"] = pd.to_datetime(df["timestamp"])
 
-            df["periodo"] = (
-                df["timestamp"]
-                .dt.strftime(formato)
-            )
+            if formato == "5min":
+                df["periodo"] = df["timestamp"].dt.floor("5min").dt.strftime("%H:%M")
+            else:
+                df["periodo"] = df["timestamp"].dt.strftime(formato)
 
             df_agg = (
                 df.groupby(
