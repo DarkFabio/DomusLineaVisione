@@ -13,7 +13,8 @@ data_logger = DataLogger()
 def salva_eventi():
     # prende l'evento generato dalla telecamera e scrive una riga sul database con il metodo dentro a DataLogger
     if camera.last_event is not None:
-
+        pezzi_fila = 0
+        area = 0
         # leggo i dati dal plc
         with omron.NSeries(camera.config["plc"]["ip"]) as eip_conn:
             pezzi_fila = eip_conn.read_variable("pc_pezzi_per_fila")
