@@ -405,44 +405,44 @@ class VideoCamera:
 
     def update_counter(self, rows):
         # funzione per contare le tile quando entrano nell'area
-        row_inside_area = False
+        current_time = time.time()
+        if current_time - self.last_count_time > self.config["camera"]["count_lock_time"]:
+
+            row_inside_area = False
+
+            for row in rows:
+
+                y = row["mean_y"]
+
+                if self.config["camera"]["count_area_top"] <= y <= self.config["camera"]["count_area_bottom"]:
 
 
-        for row in rows:
 
-            y = row["mean_y"]
+                        self.last_count_time = current_time
 
-            current_time = time.time()
+                        row_inside_area = True
 
-            if self.config["camera"]["count_area_top"] <= y <= self.config["camera"]["count_area_bottom"]:
+                        total = len(row["tiles"])
 
-                if current_time - self.last_count_time > self.config["camera"]["count_lock_time"]:
+                        good = sum(
+                            1 for tile in row["tiles"]
+                            if tile["valid"] == True
+                        )
+                        broken = total - good
 
-                    self.last_count_time = current_time
+                        if not self.row_counted:
+                            self.row_counted = True
+                            self.last_event = {
+                                "tiles_row": total,
+                                "good_tiles": good,
+                                "broken_tiles": broken
+                            }
 
-                    row_inside_area = True
+                            break
 
-                    total = len(row["tiles"])
-
-                    good = sum(
-                        1 for tile in row["tiles"]
-                        if tile["valid"] == True
-                    )
-                    broken = total - good
-
-                    if not self.row_counted:
-                        self.row_counted = True
-                        self.last_event = {
-                            "tiles_row": total,
-                            "good_tiles": good,
-                            "broken_tiles": broken
-                        }
-
-                        break
-
-        if not row_inside_area:
-            self.row_counted = False
-            self.last_event =  None
+            if not row_inside_area:
+                self.row_counted = False
+                self.last_event =  None
 
     def draw_count_area(self, image):
         overlay = image.copy()
