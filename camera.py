@@ -414,7 +414,7 @@ class VideoCamera:
 
             current_time = time.time()
 
-            if self.config["camera"]["count_area_top"] <= y <= self.config["camera"]["count_area_bottom"]:
+            if self.config["camera"]["count_area_top"] >= y >= self.config["camera"]["count_area_bottom"]:
 
                 if current_time - self.last_count_time > self.config["camera"]["count_lock_time"]:
 
@@ -422,9 +422,8 @@ class VideoCamera:
 
                     row_inside_area = True
 
-                    total = sum(
-                        1 for tile in row["tiles"]
-                    )
+                    total = len(row["tiles"])
+
                     good = sum(
                         1 for tile in row["tiles"]
                         if tile["valid"] == True
