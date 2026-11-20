@@ -54,11 +54,11 @@ class DataLogger():
         )
 
         # dal database leggo il numero di mattonelle, poi li converto in m2
-        df["tiles_row"] = (df["tiles_row"] * df["tile_area"])
+        df["tiles_row"] = (df["tiles_row"] * df["area_tiles"])
 
-        df["good_tiles"] = (df["good_tiles"] * df["tile_area"])
+        df["good_tiles"] = (df["good_tiles"] * df["area_tiles"])
 
-        df["broken_tiles"] = (df["broken_tiles"] * df["tile_area"])
+        df["broken_tiles"] = (df["broken_tiles"] * df["area_tiles"])
 
         # ------------------------
         # SELEZIONE PERIODO
