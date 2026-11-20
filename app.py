@@ -84,9 +84,22 @@ with gr.Blocks(title="Tiles Vision") as demo:
                 type="string"
             )
 
+            # pulsanti per settare orari definiti
+            btn_1h = gr.Button("Ultima Ora", variant="primary")
             btn_oggi = gr.Button("Solo Oggi", variant="primary")
             btn_7gg = gr.Button("Ultimi 7 Giorni", variant="primary")
             btn_30gg = gr.Button("Ultimi 30 Giorni", variant="primary")
+
+            view_scale = gr.Radio(
+                choices=["m2", "pz"],
+                label="Unità di misura",
+                value="m2"
+            )
+
+            view_scale.change(
+                fn=data_logger.set_unti_scale,
+                inputs=view_scale
+            )
 
     grafico = gr.Plot(
         value=data_logger.crea_grafico_periodo(
@@ -104,6 +117,10 @@ with gr.Blocks(title="Tiles Vision") as demo:
         )
 
     # Pulsanti rapidi per velocizzare l'operatore
+    btn_1h.click(
+        fn=lambda: (datetime.now().strftime("%Y-%m-%d"), datetime.now().strftime("%Y-%m-%d")),
+        outputs=[data_inizio, data_fine]
+    )
     btn_oggi.click(
         fn=lambda: (datetime.now().strftime("%Y-%m-%d"), datetime.now().strftime("%Y-%m-%d")),
         outputs=[data_inizio, data_fine]

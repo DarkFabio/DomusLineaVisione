@@ -13,6 +13,8 @@ class DataLogger():
 
         self.config = None
 
+        self.measure_unit = 'm2'
+
     def estrai_data_str(self, valore):
         if isinstance(valore, (int, float)):
             return datetime.fromtimestamp(valore).strftime("%Y-%m-%d")
@@ -54,11 +56,12 @@ class DataLogger():
         )
 
         # dal database leggo il numero di mattonelle, poi li converto in m2
-        df["tiles_row"] = (df["tiles_row"] * df["area_tiles"])
+        if self.measure_unit == "m2":
+            df["tiles_row"] = (df["tiles_row"] * df["area_tiles"])
 
-        df["good_tiles"] = (df["good_tiles"] * df["area_tiles"])
+            df["good_tiles"] = (df["good_tiles"] * df["area_tiles"])
 
-        df["broken_tiles"] = (df["broken_tiles"] * df["area_tiles"])
+            df["broken_tiles"] = (df["broken_tiles"] * df["area_tiles"])
 
         # ------------------------
         # SELEZIONE PERIODO
@@ -185,7 +188,7 @@ class DataLogger():
             barmode="group",
             title="Produzione Forno",
             xaxis_title="Periodo",
-            yaxis_title="Numero Mattonelle",
+            yaxis_title="Mattonelle",
             height=500,
             legend_title="Tipologia",
             plot_bgcolor="rgba(0, 0, 0, 0)",
@@ -226,3 +229,7 @@ class DataLogger():
             #print("Dati inseriti correttamente.")
         except Exception as e:
             print(f"Errore durante inserisci_evento: {e}")
+
+    def set_unti_scale(self, view_scale):
+        # funzione richiamata quando si cambia l'unità di misura di visualizzazione
+        self.measure_unit = view_scale
