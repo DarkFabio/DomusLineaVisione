@@ -73,13 +73,13 @@ with gr.Blocks(title="Tiles Vision") as demo:
         with gr.Column(scale = 1):
             data_inizio = gr.DateTime(
                 label="Data Inizio",
-                value=data_logger.oggi,
+                value=f"{data_logger.oggi} 00:00:00",
                 include_time=False,
                 type="string"
             )
             data_fine = gr.DateTime(
                 label="Data Fine",
-                value=data_logger.oggi,
+                value=f"{data_logger.oggi} 23:59:59",
                 include_time=False,
                 type="string"
             )
@@ -109,7 +109,11 @@ with gr.Blocks(title="Tiles Vision") as demo:
     )
 
     # Aggiorna il grafico quando cambia una delle due date
+    # Se l'operatore modifica a mano le date, passa a modalità "manuale"
     for selettore in [data_inizio, data_fine]:
+        selettore.change(
+            fn=lambda: data_logger.set_periodo("manuale")
+        )
         selettore.change(
             fn=data_logger.crea_grafico_periodo,
             inputs=[data_inizio, data_fine],
@@ -118,19 +122,19 @@ with gr.Blocks(title="Tiles Vision") as demo:
 
     # Pulsanti rapidi per velocizzare l'operatore
     btn_1h.click(
-        fn=lambda: (datetime.now().strftime("%Y-%m-%d"), datetime.now().strftime("%Y-%m-%d")),
+        fn=lambda: data_logger.set_periodo("1h"),
         outputs=[data_inizio, data_fine]
     )
     btn_oggi.click(
-        fn=lambda: (datetime.now().strftime("%Y-%m-%d"), datetime.now().strftime("%Y-%m-%d")),
+        fn=lambda: data_logger.set_periodo("oggi"),
         outputs=[data_inizio, data_fine]
     )
     btn_7gg.click(
-        fn=lambda: ((datetime.now() - timedelta(days=6)).strftime("%Y-%m-%d"), datetime.now().strftime("%Y-%m-%d")),
+        fn=lambda: data_logger.set_periodo("7gg"),
         outputs=[data_inizio, data_fine]
     )
     btn_30gg.click(
-        fn=lambda: ((datetime.now() - timedelta(days=29)).strftime("%Y-%m-%d"), datetime.now().strftime("%Y-%m-%d")),
+        fn=lambda: data_logger.set_periodo("30gg"),
         outputs=[data_inizio, data_fine]
     )
 
@@ -147,7 +151,6 @@ with gr.Blocks(title="Tiles Vision") as demo:
 
     timer_grafico.tick(
         fn=data_logger.crea_grafico_periodo,
-        inputs=[data_inizio, data_fine],
         outputs=grafico
     )
 

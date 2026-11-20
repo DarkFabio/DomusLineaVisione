@@ -14,94 +14,102 @@ class DataLogger():
         self.config = None
 
         self.measure_unit = 'm2'
+        self.periodo_attivo = "oggi"  # Può essere: "1h", "oggi", "7gg", "30gg",
+
+    def set_periodo(self, periodo):
+        self.periodo_attivo = periodo
+        adesso = datetime.now()
+        fine = adesso.strftime("%Y-%m-%d")
+
+        if periodo == "1h" or periodo == "oggi":
+            inizio = fine
+        elif periodo == "7gg":
+            inizio = (adesso - timedelta(days=6)).strftime("%Y-%m-%d")
+        elif periodo == "30gg":
+            inizio = (adesso - timedelta(days=29)).strftime("%Y-%m-%d")
+        else:
+            inizio = fine
+
+        return inizio, fine
 
     def estrai_data_str(self, valore):
         if isinstance(valore, (int, float)):
-            return datetime.fromtimestamp(valore).strftime("%Y-%m-%d")
+            return datetime.fromtimestamp(valore).strftime("%Y-%m-%d %H:%M:%S")
         elif isinstance(valore, str) and valore:
-            return valore[:10]
-        return datetime.now().strftime("%Y-%m-%d")
+            # Se manca l'orario (es. solo YYYY-MM-DD), aggiunge 00:00:00
+            return valore[:19] if len(valore) >= 19 else f"{valore[:10]} 00:00:00"
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    def crea_grafico_periodo(self, data_inizio, data_fine):
+    def crea_grafico_periodo(self, data_inizio=None, data_fine=None):
+        adesso = datetime.now()
 
-        inizio_str = self.estrai_data_str(data_inizio)
-        fine_str = self.estrai_data_str(data_fine)
+        # 1. Calcolo dinamico di inizio e fine in base alla modalità
+        if self.periodo_attivo == "1h":
+            dt_fine = adesso
+            dt_inizio = adesso - timedelta(hours=1)
+        elif self.periodo_attivo == "oggi":
+            dt_inizio = adesso.replace(hour=0, minute=0, second=0, microsecond=0)
+            dt_fine = adesso
+        elif self.periodo_attivo == "7gg":
+            dt_inizio = (adesso - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
+            dt_fine = adesso
+        elif self.periodo_attivo == "30gg":
+            dt_inizio = (adesso - timedelta(days=29)).replace(hour=0, minute=0, second=0, microsecond=0)
+            dt_fine = adesso
+        else:  # Modalità "manuale" (date scelte dall'operatore)
+            inizio_str = self.estrai_data_str(data_inizio)
+            fine_str = self.estrai_data_str(data_fine)
+            if inizio_str > fine_str:
+                inizio_str, fine_str = fine_str, inizio_str
+            dt_inizio = datetime.strptime(f"{inizio_str} 00:00:00", "%Y-%m-%d %H:%M:%S")
+            dt_fine = datetime.strptime(f"{fine_str} 23:59:59", "%Y-%m-%d %H:%M:%S")
 
-        if inizio_str > fine_str:
-            inizio_str, fine_str = fine_str, inizio_str
+        inizio_query = dt_inizio.strftime("%Y-%m-%d %H:%M:%S")
+        fine_query = dt_fine.strftime("%Y-%m-%d %H:%M:%S")
 
-        dt_inizio = datetime.strptime(
-            inizio_str,
-            "%Y-%m-%d"
-        )
 
-        dt_fine = datetime.strptime(
-            fine_str,
-            "%Y-%m-%d"
-        )
-
-        giorni_diff = (
-                dt_fine - dt_inizio
-        ).days
-
+        # Query sull'intero timestamp, non più solo su date(timestamp)
         query = """
             SELECT * FROM production_events
-            WHERE date(timestamp) BETWEEN ? AND ?
+            WHERE timestamp BETWEEN ? AND ?
         """
-
         df = pd.read_sql_query(
             query,
             self.engine,
-            params=(inizio_str, fine_str)
+            params=(inizio_query, fine_query)
         )
 
-        # dal database leggo il numero di mattonelle, poi li converto in m2
-        if self.measure_unit == "m2":
-            df["tiles_row"] = (df["tiles_row"] * df["area_tiles"])
+        if not df.empty and self.measure_unit == "m2":
+            df["tiles_row"] = df["tiles_row"] * df["area_tiles"]
+            df["good_tiles"] = df["good_tiles"] * df["area_tiles"]
+            df["broken_tiles"] = df["broken_tiles"] * df["area_tiles"]
 
-            df["good_tiles"] = (df["good_tiles"] * df["area_tiles"])
+        # 3. Granularità asse X
+        giorni_diff = (dt_fine.date() - dt_inizio.date()).days
 
-            df["broken_tiles"] = (df["broken_tiles"] * df["area_tiles"])
-
-        # ------------------------
-        # SELEZIONE PERIODO
-        # ------------------------
-
-        if giorni_diff == 0:
-
-            etichette = [
-                f"{h:02d}:00"
-                for h in range(24)
-            ]
-
-            formato = "%H:00"
-
-        elif giorni_diff <= 31:
-
+        if self.periodo_attivo == "1h":
             etichette = (
-                pd.date_range(
-                    start=inizio_str,
-                    end=fine_str,
-                    freq="D"
-                )
+                pd.date_range(start=dt_inizio, end=dt_fine, freq="min")
+                .strftime("%H:%M")
+                .tolist()
+            )
+            formato = "%H:%M"
+        elif giorni_diff == 0:
+            etichette = [f"{h:02d}:00" for h in range(24)]
+            formato = "%H:00"
+        elif giorni_diff <= 31:
+            etichette = (
+                pd.date_range(start=dt_inizio.date(), end=dt_fine.date(), freq="D")
                 .strftime("%d-%m")
                 .tolist()
             )
-
             formato = "%d-%m"
-
         else:
-
             etichette = (
-                pd.period_range(
-                    start=inizio_str,
-                    end=fine_str,
-                    freq="M"
-                )
+                pd.period_range(start=dt_inizio.date(), end=dt_fine.date(), freq="M")
                 .strftime("%Y-%m")
                 .tolist()
             )
-
             formato = "%Y-%m"
 
         # ------------------------
