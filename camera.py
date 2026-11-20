@@ -414,7 +414,7 @@ class VideoCamera:
 
             current_time = time.time()
 
-            if self.config["camera"]["count_area_top"] >= y >= self.config["camera"]["count_area_bottom"]:
+            if self.config["camera"]["count_area_top"] <= y <= self.config["camera"]["count_area_bottom"]:
 
                 if current_time - self.last_count_time > self.config["camera"]["count_lock_time"]:
 
@@ -438,7 +438,7 @@ class VideoCamera:
                             "broken_tiles": broken
                         }
 
-                    break
+                        break
 
         if not row_inside_area:
             self.row_counted = False
