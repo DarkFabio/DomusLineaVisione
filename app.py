@@ -20,11 +20,15 @@ def salva_eventi():
             pezzi_fila = eip_conn.read_variable("pc_pezzi_per_fila")
             area = eip_conn.read_variable("pc_area_tile")
 
-        data_logger.inserisci_evento(
-            pezzi_fila * area,
-            camera.last_event["good_tiles"] * area,
-            camera.last_event["broken_tiles"] * area
-        )
+        # Preparo i dati da scrivere nel database
+        data = {
+            "pezzi_fila": pezzi_fila,
+            "good_tiles": camera.last_event["good_tiles"],
+            "broken_tiles": camera.last_event["broken_tiles"],
+            "area_tiles": area,
+             }
+
+        data_logger.inserisci_evento(data)
 
         camera.last_event = None
 
