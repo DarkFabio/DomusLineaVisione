@@ -22,7 +22,7 @@ def salva_eventi():
 
         # Preparo i dati da scrivere nel database
         data = {
-            "pezzi_fila": pezzi_fila,
+            "tiles_row": pezzi_fila,
             "good_tiles": camera.last_event["good_tiles"],
             "broken_tiles": camera.last_event["broken_tiles"],
             "area_tiles": area,
