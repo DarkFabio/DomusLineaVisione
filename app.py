@@ -121,7 +121,7 @@ with gr.Blocks(title="Tiles Vision") as demo:
     )
 
     # timer aggiornamento grafico
-    timer_grafico = gr.Timer(60)
+    timer_grafico = gr.Timer(1)
 
     timer_grafico.tick(
         fn=data_logger.crea_grafico_periodo,
