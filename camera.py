@@ -6,8 +6,6 @@ import pyrealsense2 as rs
 from ultralytics import YOLO
 from pathlib import Path
 
-COUNT_AREA_TOP = 600
-COUNT_AREA_BOTTOM = 680
 
 class VideoCamera:
     def __init__(self):
@@ -42,6 +40,7 @@ class VideoCamera:
         self.row_in_count_zone = False
         self.row_counted = False
         self.last_event = None
+        self.last_count_time = 0
 
     def set_visibility(self, selected):
         self.show_rows = "Rows" in selected
@@ -413,28 +412,34 @@ class VideoCamera:
 
             y = row["mean_y"]
 
-            if COUNT_AREA_TOP <= y <= COUNT_AREA_BOTTOM:
+            current_time = time.time()
 
-                row_inside_area = True
+            if self.config["camera"]["count_area_top"] <= y <= self.config["camera"]["count_area_bottom"]:
 
-                total = sum(
-                    1 for tile in row["tiles"]
-                )
-                good = sum(
-                    1 for tile in row["tiles"]
-                    if tile["valid"] == True
-                )
-                broken = total - good
+                if current_time - self.last_count_time > self.config["camera"]["count_lock_time"]:
 
-                if not self.row_counted:
-                    self.row_counted = True
-                    self.last_event = {
-                        "tiles_row": total,
-                        "good_tiles": good,
-                        "broken_tiles": broken
-                    }
+                    self.last_count_time = current_time
 
-                break
+                    row_inside_area = True
+
+                    total = sum(
+                        1 for tile in row["tiles"]
+                    )
+                    good = sum(
+                        1 for tile in row["tiles"]
+                        if tile["valid"] == True
+                    )
+                    broken = total - good
+
+                    if not self.row_counted:
+                        self.row_counted = True
+                        self.last_event = {
+                            "tiles_row": total,
+                            "good_tiles": good,
+                            "broken_tiles": broken
+                        }
+
+                    break
 
         if not row_inside_area:
             self.row_counted = False
@@ -445,8 +450,8 @@ class VideoCamera:
 
         cv2.rectangle(
             overlay,
-            (0, COUNT_AREA_TOP),
-            (image.shape[1], COUNT_AREA_BOTTOM),
+            (0, self.config["camera"]["count_area_top"]),
+            (image.shape[1], self.config["camera"]["count_area_bottom"]),
             (0, 255, 255),
             -1
         )
