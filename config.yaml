@@ -1,5 +1,5 @@
 ui:
-  camera_heigh : 600
+  camera_heigh : 550
 
 camera:
   min_confidence: 0.50
