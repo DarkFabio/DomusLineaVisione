@@ -15,6 +15,8 @@ class DataLogger():
 
         self.measure_unit = 'm2'
         self.periodo_attivo = "oggi"  # Può essere: "1h", "oggi", "7gg", "30gg",
+        self.manual_start = datetime.now()
+        self.manual_end = datetime.now()
 
     def estrai_data_str(self, valore):
         if isinstance(valore, (int, float)):
@@ -24,34 +26,68 @@ class DataLogger():
             return valore[:19] if len(valore) >= 19 else f"{valore[:10]} 00:00:00"
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    def set_periodo(self, periodo, data_inizio = None, data_fine = None):
+    def set_periodo(self, periodo):
         self.periodo_attivo = periodo
+
+    def get_date_range(self):
+
         adesso = datetime.now()
 
-        fine = adesso
-
-        # 1. Calcolo dinamico di inizio e fine in base alla modalità
         if self.periodo_attivo == "Ultima ora":
             inizio = adesso - timedelta(hours=1)
+            fine = adesso
+
         elif self.periodo_attivo == "Oggi":
-            inizio = adesso.replace(hour=0, minute=0, second=0, microsecond=0)
+            inizio = adesso.replace(
+                hour=0,
+                minute=0,
+                second=0,
+                microsecond=0
+            )
+            fine = adesso
+
         elif self.periodo_attivo == "7 Giorni":
-            inizio = (adesso - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
+            inizio = (
+                    adesso - timedelta(days=6)
+            ).replace(
+                hour=0,
+                minute=0,
+                second=0,
+                microsecond=0
+            )
+
+            fine = adesso
+
         elif self.periodo_attivo == "30 Giorni":
-            inizio = (adesso - timedelta(days=29)).replace(hour=0, minute=0, second=0, microsecond=0)
+
+            inizio = (
+                    adesso - timedelta(days=29)
+            ).replace(
+                hour=0,
+                minute=0,
+                second=0,
+                microsecond=0
+            )
+
+            fine = adesso
+
         else:
-            inizio = self.estrai_data_str(data_inizio)
-            fine = self.estrai_data_str(data_fine)
+            # modalità manuale
 
-        if inizio > fine:
-            inizio, fine_str = fine, inizio
-
+            inizio = self.manual_start
+            fine = self.manual_end
 
         return inizio, fine
 
+    def set_manual_dates(self,data_inizio,data_fine):
 
+        self.periodo_attivo = "manuale"
+        self.manual_start = pd.to_datetime(data_inizio)
+        self.manual_end = pd.to_datetime(data_fine)
 
-    def crea_grafico_periodo(self, dt_inizio=None, dt_fine=None):
+    def crea_grafico_periodo(self):
+
+        dt_inizio, dt_fine = self.get_date_range()
 
         inizio_query = dt_inizio.strftime("%Y-%m-%d %H:%M:%S")
         fine_query = dt_fine.strftime("%Y-%m-%d %H:%M:%S")
@@ -76,7 +112,7 @@ class DataLogger():
         # 3. Granularità asse X
         giorni_diff = (dt_fine.date() - dt_inizio.date()).days
 
-        if self.periodo_attivo == "1h":
+        if self.periodo_attivo == "Ultima ora":
             # Arrotonda l'inizio al blocco di 5 minuti precedente (es. 14:23 -> 14:20)
             dt_inizio_floor = dt_inizio.replace(minute=(dt_inizio.minute // 5) * 5, second=0, microsecond=0)
             dt_fine_floor = dt_fine.replace(minute=(dt_fine.minute // 5) * 5, second=0, microsecond=0)
@@ -90,7 +126,7 @@ class DataLogger():
         elif giorni_diff == 0:
             etichette = [f"{h:02d}:00" for h in range(24)]
             formato = "%H:00"
-        elif giorni_diff <= 31:
+        elif giorni_diff <= 60:
             etichette = (
                 pd.date_range(start=dt_inizio.date(), end=dt_fine.date(), freq="D")
                 .strftime("%d-%m")

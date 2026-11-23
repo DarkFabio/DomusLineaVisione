@@ -107,17 +107,15 @@ with gr.Blocks(title="Tiles Vision") as demo:
             )
 
     grafico = gr.Plot(
-        value=data_logger.crea_grafico_periodo(
-            data_logger.oggi,
-            data_logger.oggi
-        )
+        value=data_logger.crea_grafico_periodo()
     )
 
     # Aggiorna il grafico quando cambia una delle due date
     # Se l'operatore modifica a mano le date, passa a modalità "manuale"
     for selettore in [data_inizio, data_fine]:
         selettore.change(
-            fn=lambda: data_logger.set_periodo("manuale", data_inizio, data_fine)
+            fn=data_logger.set_manual_dates,
+            inputs=[data_inizio,data_fine]
         )
 
     view_scale.change(
