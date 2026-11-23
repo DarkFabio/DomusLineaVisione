@@ -84,11 +84,16 @@ with gr.Blocks(title="Tiles Vision") as demo:
                 type="string"
             )
 
-            # pulsanti per settare orari definiti
-            btn_1h = gr.Button("Ultima Ora", variant="primary")
-            btn_oggi = gr.Button("Solo Oggi", variant="primary")
-            btn_7gg = gr.Button("Ultimi 7 Giorni", variant="primary")
-            btn_30gg = gr.Button("Ultimi 30 Giorni", variant="primary")
+            view_periodo = gr.Radio(
+                choices=["Ultima ora", "Oggi", "7 Giorni", "30 Giorni"],
+                label="Periodo da visualizzare",
+                value="Oggi"
+            )
+            view_periodo.change(
+                fn=data_logger.set_periodo,
+                inputs=view_periodo
+            )
+
 
             view_scale = gr.Radio(
                 choices=["m2", "pz"],
@@ -112,30 +117,12 @@ with gr.Blocks(title="Tiles Vision") as demo:
     # Se l'operatore modifica a mano le date, passa a modalità "manuale"
     for selettore in [data_inizio, data_fine]:
         selettore.change(
-            fn=lambda: data_logger.set_periodo("manuale")
-        )
-        selettore.change(
-            fn=data_logger.crea_grafico_periodo,
-            inputs=[data_inizio, data_fine],
-            outputs=grafico
+            fn=lambda: data_logger.set_periodo("manuale", data_inizio, data_fine)
         )
 
-    # Pulsanti rapidi per velocizzare l'operatore
-    btn_1h.click(
-        fn=lambda: data_logger.set_periodo("1h"),
-        outputs=[data_inizio, data_fine]
-    )
-    btn_oggi.click(
-        fn=lambda: data_logger.set_periodo("oggi"),
-        outputs=[data_inizio, data_fine]
-    )
-    btn_7gg.click(
-        fn=lambda: data_logger.set_periodo("7gg"),
-        outputs=[data_inizio, data_fine]
-    )
-    btn_30gg.click(
-        fn=lambda: data_logger.set_periodo("30gg"),
-        outputs=[data_inizio, data_fine]
+    view_scale.change(
+        fn=data_logger.set_periodo,
+        inputs=view_scale
     )
 
     # timer aggiornamento immagine telecamera

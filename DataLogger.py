@@ -16,22 +16,6 @@ class DataLogger():
         self.measure_unit = 'm2'
         self.periodo_attivo = "oggi"  # Può essere: "1h", "oggi", "7gg", "30gg",
 
-    def set_periodo(self, periodo):
-        self.periodo_attivo = periodo
-        adesso = datetime.now()
-        fine = adesso.strftime("%Y-%m-%d")
-
-        if periodo == "1h" or periodo == "oggi":
-            inizio = fine
-        elif periodo == "7gg":
-            inizio = (adesso - timedelta(days=6)).strftime("%Y-%m-%d")
-        elif periodo == "30gg":
-            inizio = (adesso - timedelta(days=29)).strftime("%Y-%m-%d")
-        else:
-            inizio = fine
-
-        return inizio, fine
-
     def estrai_data_str(self, valore):
         if isinstance(valore, (int, float)):
             return datetime.fromtimestamp(valore).strftime("%Y-%m-%d %H:%M:%S")
@@ -40,29 +24,34 @@ class DataLogger():
             return valore[:19] if len(valore) >= 19 else f"{valore[:10]} 00:00:00"
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    def crea_grafico_periodo(self, data_inizio=None, data_fine=None):
+    def set_periodo(self, periodo, data_inizio = None, data_fine = None):
+        self.periodo_attivo = periodo
         adesso = datetime.now()
 
+        fine = adesso
+
         # 1. Calcolo dinamico di inizio e fine in base alla modalità
-        if self.periodo_attivo == "1h":
-            dt_fine = adesso
-            dt_inizio = adesso - timedelta(hours=1)
-        elif self.periodo_attivo == "oggi":
-            dt_inizio = adesso.replace(hour=0, minute=0, second=0, microsecond=0)
-            dt_fine = adesso
-        elif self.periodo_attivo == "7gg":
-            dt_inizio = (adesso - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
-            dt_fine = adesso
-        elif self.periodo_attivo == "30gg":
-            dt_inizio = (adesso - timedelta(days=29)).replace(hour=0, minute=0, second=0, microsecond=0)
-            dt_fine = adesso
-        else:  # Modalità "manuale" (date scelte dall'operatore)
-            inizio_str = self.estrai_data_str(data_inizio)
-            fine_str = self.estrai_data_str(data_fine)
-            if inizio_str > fine_str:
-                inizio_str, fine_str = fine_str, inizio_str
-            dt_inizio = datetime.strptime(f"{inizio_str} 00:00:00", "%Y-%m-%d %H:%M:%S")
-            dt_fine = datetime.strptime(f"{fine_str} 23:59:59", "%Y-%m-%d %H:%M:%S")
+        if self.periodo_attivo == "Ultima ora":
+            inizio = adesso - timedelta(hours=1)
+        elif self.periodo_attivo == "Oggi":
+            inizio = adesso.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif self.periodo_attivo == "7 Giorni":
+            inizio = (adesso - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
+        elif self.periodo_attivo == "30 Giorni":
+            inizio = (adesso - timedelta(days=29)).replace(hour=0, minute=0, second=0, microsecond=0)
+        else:
+            inizio = self.estrai_data_str(data_inizio)
+            fine = self.estrai_data_str(data_fine)
+
+        if inizio > fine:
+            inizio, fine_str = fine, inizio
+
+
+        return inizio, fine
+
+
+
+    def crea_grafico_periodo(self, dt_inizio=None, dt_fine=None):
 
         inizio_query = dt_inizio.strftime("%Y-%m-%d %H:%M:%S")
         fine_query = dt_fine.strftime("%Y-%m-%d %H:%M:%S")
