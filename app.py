@@ -89,22 +89,14 @@ with gr.Blocks(title="Tiles Vision") as demo:
                 label="Periodo da visualizzare",
                 value="Oggi"
             )
-            view_periodo.change(
-                fn=data_logger.set_periodo,
-                inputs=view_periodo
-            )
-
 
             view_scale = gr.Radio(
-                choices=["m2", "pz"],
+                choices=["m²", "pz"],
                 label="Unità di misura",
-                value="m2"
+                value="m²"
             )
 
-            view_scale.change(
-                fn=data_logger.set_unti_scale,
-                inputs=view_scale
-            )
+
 
     grafico = gr.Plot(
         value=data_logger.crea_grafico_periodo()
@@ -115,12 +107,20 @@ with gr.Blocks(title="Tiles Vision") as demo:
     for selettore in [data_inizio, data_fine]:
         selettore.change(
             fn=data_logger.set_manual_dates,
-            inputs=[data_inizio,data_fine]
+            inputs=[data_inizio,data_fine],
+            outputs=grafico
         )
 
     view_scale.change(
+        fn=data_logger.set_unti_scale,
+        inputs=view_scale,
+        outputs=grafico
+    )
+
+    view_periodo.change(
         fn=data_logger.set_periodo,
-        inputs=view_scale
+        inputs=view_periodo,
+        outputs=grafico
     )
 
     # timer aggiornamento immagine telecamera
@@ -132,7 +132,7 @@ with gr.Blocks(title="Tiles Vision") as demo:
     )
 
     # timer aggiornamento grafico
-    timer_grafico = gr.Timer(5)
+    timer_grafico = gr.Timer(10)
 
     timer_grafico.tick(
         fn=data_logger.crea_grafico_periodo,

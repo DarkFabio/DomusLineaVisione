@@ -13,7 +13,7 @@ class DataLogger():
 
         self.config = None
 
-        self.measure_unit = 'm2'
+        self.measure_unit = 'm²'
         self.periodo_attivo = "Oggi"
         self.manual_start = datetime.now()
         self.manual_end = datetime.now()
@@ -30,7 +30,7 @@ class DataLogger():
         self.periodo_attivo = periodo
 
         # aggiorno il grafico subito
-        self.crea_grafico_periodo()
+        return self.crea_grafico_periodo()
 
     def get_date_range(self):
 
@@ -87,6 +87,8 @@ class DataLogger():
         self.periodo_attivo = "manuale"
         self.manual_start = pd.to_datetime(data_inizio)
         self.manual_end = pd.to_datetime(data_fine)
+        # aggiorno il grafico subito
+        return self.crea_grafico_periodo()
 
     def crea_grafico_periodo(self):
 
@@ -107,7 +109,7 @@ class DataLogger():
             params=(inizio_query, fine_query)
         )
 
-        if not df.empty and self.measure_unit == "m2":
+        if not df.empty and self.measure_unit == "m²":
             df["tiles_row"] = df["tiles_row"] * df["area_tiles"]
             df["good_tiles"] = df["good_tiles"] * df["area_tiles"]
             df["broken_tiles"] = df["broken_tiles"] * df["area_tiles"]
@@ -271,3 +273,5 @@ class DataLogger():
     def set_unti_scale(self, view_scale):
         # funzione richiamata quando si cambia l'unità di misura di visualizzazione
         self.measure_unit = view_scale
+        # aggiorno il grafico subito
+        return self.crea_grafico_periodo()
