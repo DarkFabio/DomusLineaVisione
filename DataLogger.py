@@ -212,6 +212,13 @@ class DataLogger():
 
         fig.add_bar(
             x=df_agg["periodo"],
+            y=df_agg["good_tiles"] + df_agg["broken_tiles"],
+            name="Reali",
+            marker_color="#22c55e"
+        )
+
+        fig.add_bar(
+            x=df_agg["periodo"],
             y=df_agg["good_tiles"],
             name="Buone",
             marker_color="#22c55e"
