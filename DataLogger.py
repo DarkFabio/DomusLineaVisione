@@ -29,6 +29,9 @@ class DataLogger():
     def set_periodo(self, periodo):
         self.periodo_attivo = periodo
 
+        # aggiorno il grafico subito
+        self.crea_grafico_periodo()
+
     def get_date_range(self):
 
         adesso = datetime.now()
