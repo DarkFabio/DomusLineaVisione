@@ -14,7 +14,7 @@ class DataLogger():
         self.config = None
 
         self.measure_unit = 'm2'
-        self.periodo_attivo = "Oggi"  # Può essere: "1h", "oggi", "7gg", "30gg",
+        self.periodo_attivo = "Oggi"
         self.manual_start = datetime.now()
         self.manual_end = datetime.now()
 
