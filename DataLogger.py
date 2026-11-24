@@ -233,64 +233,91 @@ class DataLogger():
                 name="Rotte",
                 marker_color="#ef4444"
             )
+        # ------------------------
+        # PLOTLY a linee
+        # ------------------------
+        if self.trace_type == "linee":
 
-        else:
+            if df.empty:
+                df_linee = pd.DataFrame(columns=["timestamp", "tiles_row", "good_tiles", "broken_tiles"])
+            else:
+                df = df.sort_values("timestamp").reset_index(drop=True)
+                # Fallback a 11s se il campo nel DB è nullo/mancante
+                periodo_nom = df["periodo_carico"]
 
-            fig.add_trace(
-                go.Scatter(
-                    x=df_agg["periodo"],
-                    y=df_agg["tiles_row"],
-                    mode="lines",
-                    name="Totali",
-                    line=dict(
-                        color="#3b82f6",
-                        width=3
-                    ),
-                    fill="tozeroy",
-                    fillcolor="rgba(59,130,246,0.15)"
-                )
-            )
+                df["delta_s"] = df["timestamp"].diff().dt.total_seconds()
+                df["soglia"] = periodo_nom * 1.3  # Tolleranza 30% (es. 11s -> 14.3s)
 
-            fig.add_trace(
-                go.Scatter(
-                    x=df_agg["periodo"],
-                    y=df_agg["good_tiles"] + df_agg["broken_tiles"],
-                    mode="lines",
-                    name="Vision",
-                    line=dict(
-                        color="#60a5fa",
-                        width=3
-                    ),
-                    fill="tozeroy",
-                    fillcolor="rgba(96,165,250,0.10)"
-                )
-            )
+                righe_finali = []
 
-            fig.add_trace(
-                go.Scatter(
-                    x=df_agg["periodo"],
-                    y=df_agg["good_tiles"],
-                    mode="lines",
-                    name="Rotte",
-                    line=dict(
-                        color="#57e841",
-                        width=3
-                    )
-                )
-            )
+                # 1. Zero iniziale (da dt_inizio fino a 1s prima del primo record)
+                primo_ts = df.loc[0, "timestamp"]
+                prima_soglia = float(periodo_nom.iloc[0]) * 1.3
+                if (primo_ts - dt_inizio).total_seconds() > prima_soglia:
+                    righe_finali.append({"timestamp": dt_inizio, "tiles_row": 0, "good_tiles": 0, "broken_tiles": 0})
+                    t_rise_init = primo_ts - pd.Timedelta(seconds=float(periodo_nom.iloc[-1]))
+                    if t_rise_init > dt_inizio:
+                        righe_finali.append(
+                            {"timestamp": t_rise_init, "tiles_row": 0, "good_tiles": 0, "broken_tiles": 0})
 
-            fig.add_trace(
-                go.Scatter(
-                    x=df_agg["periodo"],
-                    y=df_agg["broken_tiles"],
-                    mode="lines",
-                    name="Rotte",
-                    line=dict(
-                        color="#ef4444",
-                        width=3
-                    )
-                )
-            )
+                # 2. Ciclo sui record e sui buchi interni
+                for i, row in df.iterrows():
+                    if i > 0 and row["delta_s"] > row["soglia"]:
+                        t_prev = df.loc[i - 1, "timestamp"]
+                        p_prev = float(periodo_nom.iloc[i - 1])
+
+                        t_drop = t_prev + pd.Timedelta(seconds=p_prev)
+                        t_rise = row["timestamp"] - pd.Timedelta(seconds=1)
+
+                        righe_finali.append({"timestamp": t_drop, "tiles_row": 0, "good_tiles": 0, "broken_tiles": 0})
+                        if t_rise > t_drop:
+                            righe_finali.append(
+                                {"timestamp": t_rise, "tiles_row": 0, "good_tiles": 0, "broken_tiles": 0})
+
+                    righe_finali.append({
+                        "timestamp": row["timestamp"],
+                        "tiles_row": row["tiles_row"],
+                        "good_tiles": row["good_tiles"],
+                        "broken_tiles": row["broken_tiles"]
+                    })
+
+                # 3. Zero finale (dal termine dell'ultimo periodo fino a dt_fine)
+                ultimo_ts = df.loc[len(df) - 1, "timestamp"]
+                ultima_soglia = float(periodo_nom.iloc[-1]) * 1.3
+                if (dt_fine - ultimo_ts).total_seconds() > ultima_soglia:
+                    t_drop_end = ultimo_ts + pd.Timedelta(seconds=float(periodo_nom.iloc[-1]))
+                    if t_drop_end < dt_fine:
+                        righe_finali.append(
+                            {"timestamp": t_drop_end, "tiles_row": 0, "good_tiles": 0, "broken_tiles": 0})
+                    righe_finali.append({"timestamp": dt_fine, "tiles_row": 0, "good_tiles": 0, "broken_tiles": 0})
+
+                df_linee = pd.DataFrame(righe_finali)
+
+            fig.add_trace(go.Scatter(
+                x=df_linee["timestamp"], y=df_linee["tiles_row"],
+                mode="lines", name="Totali",
+                line=dict(color="#3b82f6", width=2),
+                fill="tozeroy", fillcolor="rgba(59,130,246,0.15)"
+            ))
+
+            fig.add_trace(go.Scatter(
+                x=df_linee["timestamp"], y=df_linee["good_tiles"] + df_linee["broken_tiles"],
+                mode="lines", name="Vision",
+                line=dict(color="#60a5fa", width=2),
+                fill="tozeroy", fillcolor="rgba(96,165,250,0.10)"
+            ))
+
+            fig.add_trace(go.Scatter(
+                x=df_linee["timestamp"], y=df_linee["good_tiles"],
+                mode="lines", name="Buone",
+                line=dict(color="#57e841", width=2)
+            ))
+
+            fig.add_trace(go.Scatter(
+                x=df_linee["timestamp"], y=df_linee["broken_tiles"],
+                mode="lines", name="Rotte",
+                line=dict(color="#ef4444", width=2)
+            ))
 
         fig.update_layout(
             barmode="group",
@@ -315,15 +342,18 @@ class DataLogger():
                 zerolinecolor="#4b5563")
         )
 
-        fig.update_xaxes(
-            categoryorder="array",
-            categoryarray=etichette
-        )
+        if self.trace_type == "barre":
+            fig.update_xaxes(
+                type="category",
+                categoryorder="array",
+                categoryarray=etichette
+            )
+        else:
+            fig.update_xaxes(
+                type="date",
+                range=[dt_inizio, dt_fine]  # <-- Blocca la finestra esatta (es. 10:30 -> 11:30)
+            )
 
-        # fig.update_xaxes(
-        #     nticks=10,
-        #     tickformat="%d-%m<br>%H:%M"
-        # )
 
         return fig
 
