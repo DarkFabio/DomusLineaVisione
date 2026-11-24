@@ -238,8 +238,8 @@ class DataLogger():
 
             fig.add_trace(
                 go.Scatter(
-                    x=df["timestamp"],
-                    y=df["tiles_row"],
+                    x=df_agg["periodo"],
+                    y=df_agg["tiles_row"],
                     mode="lines",
                     name="Totali",
                     line=dict(
@@ -253,8 +253,8 @@ class DataLogger():
 
             fig.add_trace(
                 go.Scatter(
-                    x=df["timestamp"],
-                    y=df["good_tiles"] + df["broken_tiles"],
+                    x=df_agg["periodo"],
+                    y=df_agg["good_tiles"] + df_agg["broken_tiles"],
                     mode="lines",
                     name="Vision",
                     line=dict(
@@ -268,8 +268,8 @@ class DataLogger():
 
             fig.add_trace(
                 go.Scatter(
-                    x=df["timestamp"],
-                    y=df["good_tiles"],
+                    x=df_agg["periodo"],
+                    y=df_agg["good_tiles"],
                     mode="lines",
                     name="Rotte",
                     line=dict(
@@ -281,8 +281,8 @@ class DataLogger():
 
             fig.add_trace(
                 go.Scatter(
-                    x=df["timestamp"],
-                    y=df["broken_tiles"],
+                    x=df_agg["periodo"],
+                    y=df_agg["broken_tiles"],
                     mode="lines",
                     name="Rotte",
                     line=dict(
@@ -315,15 +315,15 @@ class DataLogger():
                 zerolinecolor="#4b5563")
         )
 
-        # fig.update_xaxes(
-        #     categoryorder="array",
-        #     categoryarray=etichette
-        # )
-
         fig.update_xaxes(
-            nticks=10,
-            tickformat="%d-%m<br>%H:%M"
+            categoryorder="array",
+            categoryarray=etichette
         )
+
+        # fig.update_xaxes(
+        #     nticks=10,
+        #     tickformat="%d-%m<br>%H:%M"
+        # )
 
         return fig
 
