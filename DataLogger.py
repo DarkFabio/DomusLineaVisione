@@ -217,7 +217,7 @@ class DataLogger():
                 x=df_agg["periodo"],
                 y=df_agg["good_tiles"] + df_agg["broken_tiles"],
                 name="Reali",
-                marker_color="#60a5fa"
+                marker_color="#d6cf06"
             )
 
             fig.add_bar(
@@ -303,20 +303,22 @@ class DataLogger():
             fig.add_trace(go.Scatter(
                 x=df_linee["timestamp"], y=df_linee["good_tiles"] + df_linee["broken_tiles"],
                 mode="lines", name="Vision",
-                line=dict(color="#60a5fa", width=2),
-                fill="tozeroy", fillcolor="rgba(96,165,250,0.10)"
+                line=dict(color="#ded837", width=2),
+                fill="tozeroy", fillcolor="rgba(222,216,55,0.15)"
             ))
 
             fig.add_trace(go.Scatter(
                 x=df_linee["timestamp"], y=df_linee["good_tiles"],
                 mode="lines", name="Buone",
-                line=dict(color="#57e841", width=2)
+                line=dict(color="#57e841", width=2),
+                fill="tozeroy", fillcolor="rgba(87,232,65,0.15)"
             ))
 
             fig.add_trace(go.Scatter(
                 x=df_linee["timestamp"], y=df_linee["broken_tiles"],
                 mode="lines", name="Rotte",
-                line=dict(color="#ef4444", width=2)
+                line=dict(color="#ef4444", width=2),
+                fill="tozeroy", fillcolor="rgba(239,68,68,0.15)"
             ))
 
         fig.update_layout(
