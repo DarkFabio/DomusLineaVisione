@@ -17,6 +17,7 @@ class DataLogger():
         self.periodo_attivo = "Oggi"
         self.manual_start = datetime.now()
         self.manual_end = datetime.now()
+        self.trace_type = "barre"
 
     def estrai_data_str(self, valore):
         if isinstance(valore, (int, float)):
@@ -103,11 +104,7 @@ class DataLogger():
             SELECT * FROM production_events
             WHERE timestamp BETWEEN ? AND ?
         """
-        df = pd.read_sql_query(
-            query,
-            self.engine,
-            params=(inizio_query, fine_query)
-        )
+        df = pd.read_sql_query(query,self.engine,params=(inizio_query, fine_query))
 
         if not df.empty and self.measure_unit == "m²":
             df["tiles_row"] = df["tiles_row"] * df["area_tiles"]
@@ -128,9 +125,11 @@ class DataLogger():
                 .tolist()
             )
             formato = "5min"
+
         elif giorni_diff == 0:
             etichette = [f"{h:02d}:00" for h in range(24)]
             formato = "%H:00"
+
         elif giorni_diff <= 60:
             etichette = (
                 pd.date_range(start=dt_inizio.date(), end=dt_fine.date(), freq="D")
@@ -139,12 +138,14 @@ class DataLogger():
             )
             formato = "%d-%m"
         else:
+
             etichette = (
                 pd.period_range(start=dt_inizio.date(), end=dt_fine.date(), freq="M")
                 .strftime("%Y-%m")
                 .tolist()
             )
             formato = "%Y-%m"
+
 
         # ------------------------
         # AGGREGAZIONE
@@ -198,38 +199,98 @@ class DataLogger():
             )
 
         # ------------------------
-        # PLOTLY
+        # PLOTLY a barre
         # ------------------------
 
         fig = go.Figure()
+        if self.trace_type=="barre":
 
-        fig.add_bar(
-            x=df_agg["periodo"],
-            y=df_agg["tiles_row"],
-            name="Totali",
-            marker_color="#3b82f6"
-        )
 
-        fig.add_bar(
-            x=df_agg["periodo"],
-            y=df_agg["good_tiles"] + df_agg["broken_tiles"],
-            name="Reali",
-            marker_color="#22c55e"
-        )
+            fig.add_bar(
+                x=df_agg["periodo"],
+                y=df_agg["tiles_row"],
+                name="Totali",
+                marker_color="#3b82f6"
+            )
 
-        fig.add_bar(
-            x=df_agg["periodo"],
-            y=df_agg["good_tiles"],
-            name="Buone",
-            marker_color="#22c55e"
-        )
+            fig.add_bar(
+                x=df_agg["periodo"],
+                y=df_agg["good_tiles"] + df_agg["broken_tiles"],
+                name="Reali",
+                marker_color="#60a5fa"
+            )
 
-        fig.add_bar(
-            x=df_agg["periodo"],
-            y=df_agg["broken_tiles"],
-            name="Rotte",
-            marker_color="#ef4444"
-        )
+            fig.add_bar(
+                x=df_agg["periodo"],
+                y=df_agg["good_tiles"],
+                name="Buone",
+                marker_color="#22c55e"
+            )
+
+            fig.add_bar(
+                x=df_agg["periodo"],
+                y=df_agg["broken_tiles"],
+                name="Rotte",
+                marker_color="#ef4444"
+            )
+
+        else:
+
+            fig.add_trace(
+                go.Scatter(
+                    x=df["timestamp"],
+                    y=df["tiles_row"],
+                    mode="lines",
+                    name="Totali",
+                    line=dict(
+                        color="#3b82f6",
+                        width=3
+                    ),
+                    fill="tozeroy",
+                    fillcolor="rgba(59,130,246,0.15)"
+                )
+            )
+
+            fig.add_trace(
+                go.Scatter(
+                    x=df["timestamp"],
+                    y=df["good_tiles"] + df["broken_tiles"],
+                    mode="lines",
+                    name="Vision",
+                    line=dict(
+                        color="#60a5fa",
+                        width=3
+                    ),
+                    fill="tozeroy",
+                    fillcolor="rgba(96,165,250,0.10)"
+                )
+            )
+
+            fig.add_trace(
+                go.Scatter(
+                    x=df["timestamp"],
+                    y=df["good_tiles"],
+                    mode="lines",
+                    name="Rotte",
+                    line=dict(
+                        color="#57e841",
+                        width=3
+                    )
+                )
+            )
+
+            fig.add_trace(
+                go.Scatter(
+                    x=df["timestamp"],
+                    y=df["broken_tiles"],
+                    mode="lines",
+                    name="Rotte",
+                    line=dict(
+                        color="#ef4444",
+                        width=3
+                    )
+                )
+            )
 
         fig.update_layout(
             barmode="group",
@@ -254,9 +315,14 @@ class DataLogger():
                 zerolinecolor="#4b5563")
         )
 
+        # fig.update_xaxes(
+        #     categoryorder="array",
+        #     categoryarray=etichette
+        # )
+
         fig.update_xaxes(
-            categoryorder="array",
-            categoryarray=etichette
+            nticks=10,
+            tickformat="%d-%m<br>%H:%M"
         )
 
         return fig
@@ -280,5 +346,10 @@ class DataLogger():
     def set_unti_scale(self, view_scale):
         # funzione richiamata quando si cambia l'unità di misura di visualizzazione
         self.measure_unit = view_scale
+        # aggiorno il grafico subito
+        return self.crea_grafico_periodo()
+
+    def set_trace_type(self, type):
+        self.trace_type = type
         # aggiorno il grafico subito
         return self.crea_grafico_periodo()

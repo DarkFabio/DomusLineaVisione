@@ -96,6 +96,12 @@ with gr.Blocks(title="Tiles Vision") as demo:
                 value="m²"
             )
 
+            trace_type = gr.Radio(
+                choices=["linee", "barre"],
+                label="Tipo di graifco",
+                value="barre"
+            )
+
 
 
     grafico = gr.Plot(
@@ -120,6 +126,12 @@ with gr.Blocks(title="Tiles Vision") as demo:
     view_periodo.change(
         fn=data_logger.set_periodo,
         inputs=view_periodo,
+        outputs=grafico
+    )
+
+    trace_type.change(
+        fn=data_logger.set_trace_type,
+        inputs=trace_type,
         outputs=grafico
     )
 
