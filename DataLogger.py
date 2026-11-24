@@ -1,11 +1,12 @@
 from sqlalchemy import create_engine
 import pandas as pd
-import gradio as gr
+import sqlite3
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 
 class DataLogger():
     def __init__(self):
+        self.crea_database()
         self.engine = create_engine('sqlite:///history.db')
 
         self.oggi = datetime.now().strftime("%Y-%m-%d")
@@ -18,6 +19,22 @@ class DataLogger():
         self.manual_start = datetime.now()
         self.manual_end = datetime.now()
         self.trace_type = "barre"
+
+    def crea_database(self):
+        connection = sqlite3.connect("history.db")
+        cursor = connection.cursor()
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS production_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp DATETIME DEFAULT (datetime('now', 'localtime')),
+                tiles_row INTEGER,
+                good_tiles INTEGER,
+                broken_tiles INTEGER,
+                area_tiles REAL,
+                periodo_carico INTEGER
+            );
+        """)
 
     def estrai_data_str(self, valore):
         if isinstance(valore, (int, float)):
