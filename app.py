@@ -15,11 +15,12 @@ def salva_eventi():
     if camera.last_event is not None:
         pezzi_fila = 0
         area = 0
+        periodo_carico = 0
         # leggo i dati dal plc
         with omron.NSeries(camera.config["plc"]["ip"]) as eip_conn:
             pezzi_fila = eip_conn.read_variable("pc_pezzi_per_fila")
             area = eip_conn.read_variable("pc_area_tile")
-            periodo = eip_conn.read_variable("pc_minimo_periodo_carico_materiale")
+            periodo_carico = eip_conn.read_variable("pc_minimo_periodo_carico_materiale")
 
         # Preparo i dati da scrivere nel database
         data = {
@@ -27,7 +28,7 @@ def salva_eventi():
             "good_tiles": camera.last_event["good_tiles"],
             "broken_tiles": camera.last_event["broken_tiles"],
             "area_tiles": area,
-            "periodo": periodo,
+            "periodo_carico": periodo_carico,
              }
 
         data_logger.inserisci_evento(data)
