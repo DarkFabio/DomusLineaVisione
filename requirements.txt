@@ -5,4 +5,4 @@ pyrealsense2
 sqlalchemy
 plotly
 aphyt
-sqlite3
+pysqlite3
