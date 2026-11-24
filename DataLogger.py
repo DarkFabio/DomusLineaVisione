@@ -18,7 +18,7 @@ class DataLogger():
         self.periodo_attivo = "Oggi"
         self.manual_start = datetime.now()
         self.manual_end = datetime.now()
-        self.trace_type = "barre"
+        self.trace_type = "Barre"
 
     def crea_database(self):
         connection = sqlite3.connect("history.db")
@@ -220,7 +220,7 @@ class DataLogger():
         # ------------------------
 
         fig = go.Figure()
-        if self.trace_type=="barre":
+        if self.trace_type=="Barre":
 
 
             fig.add_bar(
@@ -253,7 +253,7 @@ class DataLogger():
         # ------------------------
         # PLOTLY a linee
         # ------------------------
-        if self.trace_type == "linee":
+        if self.trace_type == "Linee":
 
             if df.empty:
                 df_linee = pd.DataFrame(columns=["timestamp", "tiles_row", "good_tiles", "broken_tiles"])
@@ -319,7 +319,7 @@ class DataLogger():
 
             fig.add_trace(go.Scatter(
                 x=df_linee["timestamp"], y=df_linee["good_tiles"] + df_linee["broken_tiles"],
-                mode="lines", name="Vision",
+                mode="lines", name="Reali",
                 line=dict(color="#ded837", width=2),
                 fill="tozeroy", fillcolor="rgba(222,216,55,0.15)"
             ))

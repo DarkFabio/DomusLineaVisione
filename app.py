@@ -94,15 +94,15 @@ with gr.Blocks(title="Tiles Vision") as demo:
             )
 
             view_scale = gr.Radio(
-                choices=["m²", "pz"],
+                choices=["m²", "Pezzi"],
                 label="Unità di misura",
                 value="m²"
             )
 
             trace_type = gr.Radio(
-                choices=["linee", "barre"],
+                choices=["Linee", "Barre"],
                 label="Tipo di graifco",
-                value="barre"
+                value="Barre"
             )
 
 

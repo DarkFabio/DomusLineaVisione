@@ -393,12 +393,12 @@ class VideoCamera:
         rejected_tiles = len(total_tiles) - valid
 
         info = (
-                f"Rows:         {len(rows)}\n"
-                f"Total Tiles:  {len(total_tiles)}\n"
-                f"Valid:        {valid}\n"
-                f"Rejected:     {rejected_tiles}\n"
-                f"Area Ref:     {self.reference_area:.0f}\n"
-                f"Inference:    {inference_ms:.1f} ms\n"
+                f"Numero di File:       {len(rows)}\n"
+                f"Mattonelle Presenti:  {len(total_tiles)}\n"
+                f"Mattonelle Buone:     {valid}\n"
+                f"Mattonelle scarto:    {rejected_tiles}\n"
+                f"Area di riferimento:  {self.reference_area:.0f}\n"
+                f"Tempo Inference:      {inference_ms:.1f} ms\n"
         )
 
         return info
