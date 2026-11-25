@@ -21,6 +21,7 @@ class DataLogger():
         self.trace_type = "Barre"
 
         self.last_stats = ""
+        self.auto_aggiornamento = True
 
     def crea_database(self):
         connection = sqlite3.connect("history.db")
@@ -61,38 +62,16 @@ class DataLogger():
             fine = adesso
 
         elif self.periodo_attivo == "Oggi":
-            inizio = adesso.replace(
-                hour=0,
-                minute=0,
-                second=0,
-                microsecond=0
-            )
-            fine = adesso
+            inizio = adesso.replace(hour=0, minute=0, second=0, microsecond=0)
+            fine = adesso.replace(hour=23, minute=59, second=59, microsecond=0)
 
         elif self.periodo_attivo == "7 Giorni":
-            inizio = (
-                    adesso - timedelta(days=6)
-            ).replace(
-                hour=0,
-                minute=0,
-                second=0,
-                microsecond=0
-            )
-
-            fine = adesso
+            inizio = (adesso - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
+            fine = adesso.replace(hour=23, minute=59, second=59, microsecond=0)
 
         elif self.periodo_attivo == "30 Giorni":
-
-            inizio = (
-                    adesso - timedelta(days=29)
-            ).replace(
-                hour=0,
-                minute=0,
-                second=0,
-                microsecond=0
-            )
-
-            fine = adesso
+            inizio = (adesso - timedelta(days=29)).replace(hour=0, minute=0, second=0, microsecond=0)
+            fine = adesso.replace(hour=23, minute=59, second=59, microsecond=0)
 
         else:
             # modalità manuale
@@ -367,12 +346,13 @@ class DataLogger():
             fig.update_xaxes(
                 type="category",
                 categoryorder="array",
-                categoryarray=etichette
+                categoryarray=etichette,
+                range=[dt_inizio, dt_fine]
             )
         else:
             fig.update_xaxes(
                 type="date",
-                range=[dt_inizio, dt_fine]  # <-- Blocca la finestra esatta (es. 10:30 -> 11:30)
+                range=[dt_inizio, dt_fine]
             )
 
         return fig, self.build_stats(df, df_agg, dt_inizio, dt_fine)
