@@ -395,7 +395,7 @@ class VideoCamera:
         info = (
                 f"Presenti:         {len(total_tiles)}\n"
                 f"Buone:            {valid}\n"
-                f"scarto:           {rejected_tiles}\n"
+                f"scarto:            {rejected_tiles}\n"
                 f"Area di riferimento:  {self.reference_area:.0f}\n"
                 f"Tempo Inference:      {inference_ms:.1f} ms"
         )
