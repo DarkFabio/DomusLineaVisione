@@ -20,6 +20,8 @@ class DataLogger():
         self.manual_end = datetime.now()
         self.trace_type = "Barre"
 
+        self.last_stats = ""
+
     def crea_database(self):
         connection = sqlite3.connect("history.db")
         cursor = connection.cursor()
@@ -361,7 +363,7 @@ class DataLogger():
                 zerolinecolor="#4b5563")
         )
 
-        if self.trace_type == "barre":
+        if self.trace_type == "Barre":
             fig.update_xaxes(
                 type="category",
                 categoryorder="array",
@@ -373,8 +375,7 @@ class DataLogger():
                 range=[dt_inizio, dt_fine]  # <-- Blocca la finestra esatta (es. 10:30 -> 11:30)
             )
 
-
-        return fig
+        return fig, self.build_stats(df, df_agg, dt_inizio, dt_fine)
 
     def inserisci_evento(self, data):
         try:
@@ -402,3 +403,47 @@ class DataLogger():
         self.trace_type = type
         # aggiorno il grafico subito
         return self.crea_grafico_periodo()
+
+    def build_stats(self, df, df_agg, dt_inizio, dt_fine):
+        # 1. Totali da df_agg (già sommati e convertiti in m² o Pezzi)
+        tot_teorico = df_agg["tiles_row"].sum()
+        tot_buone = df_agg["good_tiles"].sum()
+        tot_rotte = df_agg["broken_tiles"].sum()
+        tot_reale = tot_buone + tot_rotte
+
+        perc_reale = (tot_reale / tot_teorico * 100) if tot_teorico > 0 else 0.0
+        perc_buone = (tot_buone / tot_reale * 100) if tot_reale > 0 else 0.0
+        perc_rotte = (tot_rotte / tot_reale * 100) if tot_reale > 0 else 0.0
+
+        # 2. Utilizzo forno e vuoti da df (contiene timestamp e periodo_carico)
+        durata_totale_s = (dt_fine - dt_inizio).total_seconds()
+        if not df.empty and durata_totale_s > 0:
+            df_sorted = df.sort_values("timestamp").reset_index(drop=True)
+            periodi = df_sorted["periodo_carico"].fillna(11).astype(float)
+            delta_next = (df_sorted["timestamp"].shift(-1) - df_sorted["timestamp"]).dt.total_seconds()
+            secondi_attivi = delta_next.combine(periodi, min)
+            secondi_attivi.iloc[-1] = max(
+                0.0,
+                min(float(periodi.iloc[-1]), (dt_fine - df_sorted["timestamp"].iloc[-1]).total_seconds())
+            )
+            perc_utilizzo = min(100.0, (secondi_attivi.sum() / durata_totale_s) * 100)
+        else:
+            perc_utilizzo = 0.0
+
+        perc_vuoti = max(0.0, 100.0 - perc_utilizzo)
+        fmt = ".0f" if self.measure_unit == "m²" else ".0f"
+
+        self.last_stats = (
+            f"📊 UTILIZZO FORNO\n"
+            f"• Attivo: {int(perc_utilizzo)}%  |  Vuoti: {int(perc_vuoti)}%\n"
+            f"• Reale/Totale: {int(perc_reale)}% ({tot_reale:{fmt}} / {tot_teorico:{fmt}} {self.measure_unit})\n\n"
+            f"🧱 QUALITÀ MATERIALE\n"
+            f"• Buone: {int(perc_buone)}% ({tot_buone:{fmt}} {self.measure_unit})\n"
+            f"• Rotte: {int(perc_rotte)}% ({tot_rotte:{fmt}} {self.measure_unit})"
+        )
+        return self.last_stats
+
+    def get_stats(self):
+        return self.last_stats
+
+

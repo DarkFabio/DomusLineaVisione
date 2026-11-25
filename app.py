@@ -61,7 +61,7 @@ with gr.Blocks(title="Tiles Vision") as demo:
                 scale=2
             )
             view_group = gr.CheckboxGroup(
-                choices=["Rows", "Good", "Bad", "Objects"],
+                choices=["Rows", "Good", "Bad"],
                 label="Visualizzazione",
                 value=["Rows", "Good", "Bad"]
             )
@@ -72,6 +72,14 @@ with gr.Blocks(title="Tiles Vision") as demo:
             )
 
             info = gr.Textbox(label="Risultati", interactive=False)
+
+            stats_box = gr.Textbox(
+                label="Report Forno",
+                value=data_logger.crea_grafico_periodo()[1],
+                lines=7,
+                interactive=False
+            )
+
 
         with gr.Column(scale = 1):
             data_inizio = gr.DateTime(
@@ -108,7 +116,7 @@ with gr.Blocks(title="Tiles Vision") as demo:
 
 
     grafico = gr.Plot(
-        value=data_logger.crea_grafico_periodo()
+        value=data_logger.crea_grafico_periodo()[0],
     )
 
     # Aggiorna il grafico quando cambia una delle due date
@@ -117,25 +125,25 @@ with gr.Blocks(title="Tiles Vision") as demo:
         selettore.change(
             fn=data_logger.set_manual_dates,
             inputs=[data_inizio,data_fine],
-            outputs=grafico
+            outputs=[grafico, stats_box]
         )
 
     view_scale.change(
         fn=data_logger.set_unti_scale,
         inputs=view_scale,
-        outputs=grafico
+        outputs=[grafico, stats_box]
     )
 
     view_periodo.change(
         fn=data_logger.set_periodo,
         inputs=view_periodo,
-        outputs=grafico
+        outputs=[grafico, stats_box]
     )
 
     trace_type.change(
         fn=data_logger.set_trace_type,
         inputs=trace_type,
-        outputs=grafico
+        outputs=[grafico, stats_box]
     )
 
     # timer aggiornamento immagine telecamera
@@ -151,7 +159,7 @@ with gr.Blocks(title="Tiles Vision") as demo:
 
     timer_grafico.tick(
         fn=data_logger.crea_grafico_periodo,
-        outputs=grafico
+        outputs=[grafico, stats_box]
     )
 
     # timer inserimento evento dentro al database
