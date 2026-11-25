@@ -322,24 +322,12 @@ class DataLogger():
         fig.update_layout(
             barmode="group",
             title="Produzione Forno",
+            template="plotly_dark",
             xaxis_title="Periodo",
             yaxis_title="Mattonelle",
             height=500,
             legend_title="Tipologia",
-            plot_bgcolor="rgba(0, 0, 0, 0)",
-            paper_bgcolor="rgba(0, 0, 0, 0)",
-            font=dict(
-                color="#f3f4f6",
-                size=13),
-            xaxis=dict(
-                type="category",
-                color="#9ca3af",  # Colore dei numeri sull'asse X
-                gridcolor="#374151",  # Linee della griglia sottili e discrete
-                zerolinecolor="#4b5563"),  # Linea dello zero leggermente più marcata
-            yaxis=dict(
-                color="#9ca3af",  # Colore dei numeri sull'asse Y
-                gridcolor="#374151",
-                zerolinecolor="#4b5563")
+            hovermode="x",
         )
 
         if self.trace_type == "Barre":
